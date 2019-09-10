@@ -50,9 +50,9 @@ ImgHdrLineStop[] = "ImgHdr_LineStop", ImgHdrFrame[] = "ImgHdr_Frame";
 
 // A Tag entry
 struct TagHead {
-	char Ident[32];     // Identifier of the tag
-	int32_t Idx;            // Index for multiple tags or -1
-	uint32_t Typ;  // Type of tag ty..... see const section
+	char Ident[32]; // Identifier of the tag
+	int32_t Idx;    // Index for multiple tags or -1
+	uint32_t Typ;   // Type of tag ty..... see const section
 	int64_t TagValue; // Value of tag.
 };
 
@@ -174,6 +174,7 @@ int main(int argc, char** argv)
 	std::memset(histogram, 0, sizeof(uint32_t)*MAX_CHANNELS * PixX * PixY);
 	uint32_t maxDtime = 0; // max val in histogram
 	uint32_t TTTRRecord = 0;
+
 	for (int64_t recnum = 0; recnum < NumRecords; ++recnum) {
 		infile.read((char*)& TTTRRecord, 4);
 		if (!infile.good()) {
@@ -208,7 +209,7 @@ int main(int argc, char** argv)
 				truensync = oflcorrection + nsync;
 				//the time unit depends on sync period which can be obtained from the file header
 				unsigned int trigger = channel;
-				if ((trigger & TrgLineStartMask) != 0 /*&& framehasstarted*/) {
+				if ((trigger & TrgLineStartMask) != 0) {
 					lastlinestart = truensync;
 					++totallines;
 					isrecordingline = true;
@@ -220,7 +221,7 @@ int main(int argc, char** argv)
 					// process line data:
 					if ((linecounter >= 0)&&(linecounter < PixY)) {
 						uint32_t* lp = histogram + linecounter * MAX_CHANNELS * PixX;
-						for (auto pt : pixeltimes) {
+						for (const PixelTime& pt : pixeltimes) {
 							int64_t x = std::max(int64_t(0), std::min(((int64_t(pt.pixeltime) * PixX) / lineduration), PixX - 1));
 							unsigned int dt = pt.dtime;
 							if (dt < MAX_CHANNELS) {
@@ -240,16 +241,16 @@ int main(int argc, char** argv)
 				}
 				if (trigger & TrgFrameMask) { // we kind of ignore it, since it seems to be unreliable
 					framehasstarted = true;
-					if (isrecordingline) {
-						std::cout << "WARNING: still recording line? trigger was " << trigger << ".\n";
-					}
+//					if (isrecordingline) {
+//						std::cout << "WARNING: still recording line? trigger was " << trigger << ".\n";
+//					}
 					lastframetime = truensync;
 				}
 			}
 		}
 		else // photon detected
 		{
-			if (isrecordingline) {
+			if (isrecordingline && linecounter>=0) {
 				truensync = oflcorrection + nsync;
 				if (channel == channelofinterest) {
 					int64_t pixeltime = truensync - lastlinestart;
