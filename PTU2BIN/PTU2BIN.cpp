@@ -235,7 +235,8 @@ int main(int argc, char** argv)
 					if (linecounter == PixY) {
 						++framecounter;
 						framehasstarted = false;
-						std::cout << "frame " << framecounter << std::endl;
+						const char SPINNER[] = "-\\|/";
+						std::cout << SPINNER[framecounter & 3] << "\r" << std::flush;
 						linecounter = -1;  // skip 1st line
 					}
 				}
@@ -263,7 +264,7 @@ int main(int argc, char** argv)
 			}
 		}
 	}
-	std::cout << "total frames " << framecounter << "\ntotal lines " << totallines << std::endl;
+	std::cout << " \ntotal frames " << framecounter << "\ntotal lines " << totallines << std::endl;
 	std::cout << "max Dtime " << maxDtime << std::endl;
 	infile.close();
 	std::cout << "Writing outfile." << std::endl;
