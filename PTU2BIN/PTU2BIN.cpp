@@ -217,7 +217,6 @@ int main(int argc, char** argv)
 					isrecordingline = false;
 					lastlinestop = truensync;
 					lineduration = lastlinestop - lastlinestart;
-					//std::cout << linecounter <<" " << (lineduration*GlobRes)/PixX*1e6 << std::endl;
 					// process line data:
 					if ((linecounter >= 0)&&(linecounter < PixY)) {
 						uint32_t* lp = histogram + linecounter * MAX_CHANNELS * PixX;
@@ -235,15 +234,14 @@ int main(int argc, char** argv)
 					if (linecounter == PixY) {
 						++framecounter;
 						framehasstarted = false;
-						std::cout << "frame " << framecounter <<
-							" line count " << linecounter << std::endl;
+						std::cout << "frame " << framecounter << std::endl;
 						linecounter = -1;  // skip 1st line
 					}
 				}
 				if (trigger & TrgFrameMask) { // we kind of ignore it, since it seems to be unreliable
 					framehasstarted = true;
 					if (isrecordingline) {
-						std::cout << "WARNING: still recording line? trigger was " << trigger << ". ";
+						std::cout << "WARNING: still recording line? trigger was " << trigger << ".\n";
 					}
 					lastframetime = truensync;
 				}
@@ -291,7 +289,6 @@ int main(int argc, char** argv)
 			outfile.write((char*)(histogram + y * PixX * MAX_CHANNELS + x * MAX_CHANNELS), sizeof(uint32_t) * maxDtime);
 		}
 	}
-	//outfile.write((char*)histogram, sizeof(uint32_t) * MAX_CHANNELS * PixX * PixY);
 	outfile.close();
 	delete[] histogram;
 	std::cout << "Done." << std::endl;
