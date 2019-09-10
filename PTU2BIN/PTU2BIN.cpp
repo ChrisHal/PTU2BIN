@@ -15,7 +15,8 @@
 const char TTTRTagTTTRRecType[] = "TTResultFormat_TTTRRecType";
 const char TTTRTagNumRecords[] = "TTResult_NumberOfRecords"; // Number of TTTR Records in the File;
 const char TTTRTagRes[] = "MeasDesc_Resolution";       // Resolution for the Dtime (T3 Only)
-const char TTTRTagGlobRes[] = "MeasDesc_GlobalResolution"; // Global Resolution of TimeTag(T2) /NSync (T3)
+const char TTSyncRate[] = "TTResult_SyncRate";	// snyc rate, usually repetiton rate of laser
+const char TTTRTagGlobRes[] = "MeasDesc_GlobalResolution"; // Global Resolution of TimeTag(T2) /NSync (T3). usually intervall between laserpulses
 const char FileTagEnd[] = "Header_End";                // Always appended as last tag (BLOCKEND)
 const char ImgHdrPixX[] = "ImgHdr_PixX", ImgHdrPixY[] = "ImgHdr_PixY",
 ImgHdrPixResol[] = "ImgHdr_PixResol", ImgHdrLineStart[] = "ImgHdr_LineStart",
@@ -117,14 +118,19 @@ int main(int argc, char** argv)
 				TrgLineStart = tghd.TagValue;
 			if (strcmp(tghd.Ident, ImgHdrLineStop) == 0)
 				TrgLineStop = tghd.TagValue;
+			if (strcmp(tghd.Ident, TTSyncRate) == 0) {
+				std::cout << "Sync rate " << tghd.TagValue << " Hz" << std::endl;
+			}
 			break;
 		case tyFloat8:
 			if (strcmp(tghd.Ident, TTTRTagRes) == 0) { // Resolution for TCSPC-Decay
 				Resolution = *(double*) & (tghd.TagValue);
 				std::cout << "resol. for decay " << Resolution << " s" << std::endl;
 			}
-			if (strcmp(tghd.Ident, TTTRTagGlobRes) == 0) // Global resolution for timetag
+			if (strcmp(tghd.Ident, TTTRTagGlobRes) == 0) {// Global resolution for timetag
 				GlobRes = *(double*) & (tghd.TagValue); // in ns
+				std::cout << "Sync intervall " << GlobRes << " s" << std::endl;
+			}
 			if (strcmp(tghd.Ident, ImgHdrPixResol) == 0)
 				PixResol = *(double*) & (tghd.TagValue);
 			break;
@@ -152,8 +158,9 @@ int main(int argc, char** argv)
 		return 0;
 	}
 
+	std::cout << "estimated number of useful histogram channels " << GlobRes / Resolution << std::endl;
 	std::cout << "total # records in file: " << NumRecords << std::endl;
-	std::cout << "evaluation channel " << (channelofinterest+1) << " only." << std::endl;
+	std::cout << "Evaluating channel " << (channelofinterest+1) << " only." << std::endl;
 	const int64_t T3WRAPAROUND = 1024;
 	int64_t oflcorrection = 0, lastlinestart = -1, lastlinestop = -1, lineduration = -1, linecounter = -1 /*skip 1st line*/, 
 		totallines = 0,
