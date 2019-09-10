@@ -181,37 +181,33 @@ int main(int argc, char** argv)
 			return 0;
 		}
 
-		const uint32_t SpecialBitMask = 0x80000000;
-		union {
-			uint32_t allbits;
-			struct {
-				unsigned nsync : 10;  // numer of sync period
-				unsigned dtime : 15;    // delay from last sync in units of chosen resolution
-				unsigned channel : 6;
-				unsigned special : 1;
-			} bits;
-		} T3Rec;
-		T3Rec.allbits = TTTRRecord;
+		const uint32_t SpecialBitMask = 0x80000000,
+			nsyncmask = 1023,
+			dtimemask = 32767 << 10,
+			channelmask = 63 << 25;
+		unsigned	nsync = TTTRRecord & nsyncmask,
+					dtime = (TTTRRecord & dtimemask) >> 10,
+					channel = (TTTRRecord & channelmask) >> 25;
 
 		if (TTTRRecord&SpecialBitMask)
 		{
-			if (T3Rec.bits.channel == 0x3F) //overflow
+			if (channel == 0x3F) //overflow
 			{
 				//number of overflows is stored in nsync
-				if (T3Rec.bits.nsync == 0) //if it is zero it is an old style single overflow
+				if (nsync == 0) //if it is zero it is an old style single overflow
 				{
 					oflcorrection += T3WRAPAROUND;
 				}
 				else
 				{
-					oflcorrection += T3WRAPAROUND * T3Rec.bits.nsync;
+					oflcorrection += T3WRAPAROUND * nsync;
 				}
 			}
-			else if ((T3Rec.bits.channel >= 1) && (T3Rec.bits.channel <= 15)) //markers
+			else if ((channel >= 1) && (channel <= 15)) //markers
 			{
-				truensync = oflcorrection + T3Rec.bits.nsync;
+				truensync = oflcorrection + nsync;
 				//the time unit depends on sync period which can be obtained from the file header
-				unsigned int trigger = T3Rec.bits.channel;
+				unsigned int trigger = channel;
 				if ((trigger & TrgLineStartMask) != 0 /*&& framehasstarted*/) {
 					lastlinestart = truensync;
 					++totallines;
@@ -256,10 +252,8 @@ int main(int argc, char** argv)
 		else // photon detected
 		{
 			if (isrecordingline) {
-				truensync = oflcorrection + T3Rec.bits.nsync;
-				unsigned int ch = T3Rec.bits.channel;
-				if (ch == channelofinterest) {
-					unsigned int dtime = T3Rec.bits.dtime;
+				truensync = oflcorrection + nsync;
+				if (channel == channelofinterest) {
 					int64_t pixeltime = truensync - lastlinestart;
 					// store for later use:
 					PixelTime pt;
