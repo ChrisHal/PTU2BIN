@@ -194,9 +194,19 @@ int main(int argc, char** argv)
 	QueryPerformanceFrequency((LARGE_INTEGER*)& pcFreq);
 	QueryPerformanceCounter((LARGE_INTEGER*)& pcStart);
 #endif
-
+	const size_t BUFFSIZE = 1024; // bigger buffer did not help on test machine
+	auto buffer = new uint32_t[BUFFSIZE];
+	size_t bufidx = 0, bufnumelements = 0, recordsremaining = NumRecords;
 	for (int64_t recnum = 0; recnum < NumRecords; ++recnum) {
-		infile.read((char*)& TTTRRecord, 4);
+		if (bufidx == bufnumelements) {
+			// buffer is empty
+			size_t numtoread = std::min(BUFFSIZE, recordsremaining);
+			infile.read((char*)buffer, sizeof(uint32_t)* numtoread);
+			recordsremaining -= numtoread;
+			bufnumelements = numtoread;
+			bufidx = 0;
+		}
+		TTTRRecord = buffer[bufidx++];
 		if (!infile.good()) {
 			std::cerr << "Error while reading TTTR records from infile. Unexpected end of file." << std::endl;
 			return 0;
@@ -256,7 +266,7 @@ int main(int argc, char** argv)
 						++framecounter;
 						framehasstarted = false;
 						const char SPINNER[] = "-\\|/";
-						std::cout << SPINNER[framecounter & 3] << "\r" << std::flush;
+						std::cout << SPINNER[framecounter & 3] << "\r" << std::flush; // NOTE: this has no significant effect on performance (tested)
 						linecounter = -1;  // skip 1st line
 					}
 				}
