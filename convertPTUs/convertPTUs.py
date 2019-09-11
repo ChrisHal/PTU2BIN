@@ -18,6 +18,5 @@ for fn in filelist:
 	res=subprocess.run([toolcmd,fn,target,str(defaultchannel)])
 	if res.returncode != 0:
 		print("An error occured while converting file '%s'."%fn)
-
-
-
+print("Press RETURN")
+input()
