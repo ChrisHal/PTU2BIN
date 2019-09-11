@@ -7,8 +7,9 @@
 #include <vector>
 #include <algorithm>
 #include <cstdint>
+#include <cstring>
 
-#define	DOPERFORMANCEANALYSIS
+//#define	DOPERFORMANCEANALYSIS
 #ifdef DOPERFORMANCEANALYSIS
 #include <windows.h>
 #undef max
