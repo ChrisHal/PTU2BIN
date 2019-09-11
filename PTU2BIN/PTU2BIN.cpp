@@ -8,6 +8,13 @@
 #include <algorithm>
 #include <cstdint>
 
+#define	DOPERFORMANCEANALYSIS
+#ifdef DOPERFORMANCEANALYSIS
+#include <windows.h>
+#undef max
+#undef min
+#endif // DOPERFORMANCEANALYSIS
+
 #pragma pack(8)
 
 // some important Tag Idents (TTagHead.Ident) that we will need to read the most common content of a PTU file
@@ -182,8 +189,24 @@ int main(int argc, char** argv)
 	uint32_t maxDtime = 0; // max val in histogram
 	uint32_t TTTRRecord = 0;
 
+#ifdef DOPERFORMANCEANALYSIS
+	__int64 pcFreq = 0, pcStart = 0, pcStop = 0;
+	QueryPerformanceFrequency((LARGE_INTEGER*)& pcFreq);
+	QueryPerformanceCounter((LARGE_INTEGER*)& pcStart);
+#endif
+	const size_t BUFFSIZE = 1024; // bigger buffer did not help on test machine
+	auto buffer = new uint32_t[BUFFSIZE];
+	size_t bufidx = 0, bufnumelements = 0, recordsremaining = NumRecords;
 	for (int64_t recnum = 0; recnum < NumRecords; ++recnum) {
-		infile.read((char*)& TTTRRecord, 4);
+		if (bufidx == bufnumelements) {
+			// buffer is empty
+			size_t numtoread = std::min(BUFFSIZE, recordsremaining);
+			infile.read((char*)buffer, sizeof(uint32_t)* numtoread);
+			recordsremaining -= numtoread;
+			bufnumelements = numtoread;
+			bufidx = 0;
+		}
+		TTTRRecord = buffer[bufidx++];
 		if (!infile.good()) {
 			std::cerr << "Error while reading TTTR records from infile. Unexpected end of file." << std::endl;
 			return 0;
@@ -228,7 +251,7 @@ int main(int argc, char** argv)
 					// process line data:
 					if ((linecounter >= 0)&&(linecounter < PixY)) {
 						uint32_t* lp = histogram + linecounter * MAX_CHANNELS * PixX;
-						for (const PixelTime& pt : pixeltimes) {
+						for (auto pt : pixeltimes) {
 							int64_t x = std::max(int64_t(0), std::min(((int64_t(pt.pixeltime) * PixX) / lineduration), PixX - 1));
 							unsigned int dt = pt.dtime;
 							if (dt < MAX_CHANNELS) {
@@ -243,7 +266,7 @@ int main(int argc, char** argv)
 						++framecounter;
 						framehasstarted = false;
 						const char SPINNER[] = "-\\|/";
-						std::cout << SPINNER[framecounter & 3] << "\r" << std::flush;
+						std::cout << SPINNER[framecounter & 3] << "\r" << std::flush; // NOTE: this has no significant effect on performance (tested)
 						linecounter = -1;  // skip 1st line
 					}
 				}
@@ -271,9 +294,16 @@ int main(int argc, char** argv)
 			}
 		}
 	}
+	delete[] buffer;
 	std::cout << " \ntotal frames " << framecounter << "\ntotal lines " << totallines << std::endl;
 	std::cout << "max Dtime " << maxDtime << std::endl;
 	infile.close();
+#ifdef DOPERFORMANCEANALYSIS
+	QueryPerformanceCounter((LARGE_INTEGER*)& pcStop);
+	double duration = double(pcStop - pcStart) / double(pcFreq);
+	std::cout << "Time for execution: " << duration << " s (" << duration / NumRecords 
+		<< " s per record)" << std::endl;
+#endif
 	std::cout << "Writing outfile." << std::endl;
 	std::ofstream outfile(argv[2], std::ios::out | std::ios::binary);
 	if (!outfile.good()) {
