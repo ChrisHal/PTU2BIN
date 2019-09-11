@@ -1,5 +1,11 @@
-// Tool to convert 3T PTU file from PicoQuant symphoTime
+// Tool to convert 3T PTU file from PicoQuant SymphoTime
 // to PicoQuant BIN format (= pre-histogrammed data)
+//
+// As of now, only one specific format ist supported.
+//
+// (c) 2019 Christian R. Halaszovich
+// Some parts are based on demo code from PicoQuant
+// (see their GitHup repo)
 //
 
 #include <iostream>
