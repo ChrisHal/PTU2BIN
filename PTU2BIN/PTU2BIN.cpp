@@ -68,29 +68,29 @@ int main(int argc, char** argv)
 {
 	if ((argc < 3)||(argc>4)) {
 		std::cerr << "Usage: " << argv[0] << " <infile> <outfile> [<channel no.>]" << std::endl;
-		return 0;
+		return 1;
 	}
 	std::cout << "infile: " << argv[1] << "\noutfile: " << argv[2] << std::endl;
 	std::ifstream infile(argv[1], std::ios::in | std::ios::binary);
 	if (!infile.good()) {
 		std::cerr << "error opening infile" << std::endl;
-		return 0;
+		return 1;
 	}	// first, test if it is a valid file
 	char Magic[8];
 	infile.read(Magic, sizeof(Magic));
 	if (!infile.good()) {
 		std::cerr << "error reading infile" << std::endl;
-		return 0;
+		return 1;
 	}
 	if (std::strncmp(Magic, "PQTTTR", 6) != 0) {
 		std::cerr << "not a valid PTU file" << std::endl;
-		return 0;
+		return 1;
 	}
 	char Version[9];
 	Version[8] = 0;
 	if (!infile.read(Version, 8).good()) {
 		std::cerr << "error reading infile" << std::endl;
-		return 0;
+		return 1;
 	}
 	std::cout << "File version: " << Version << std::endl;
 	unsigned int channelofinterest = 1;
@@ -157,12 +157,12 @@ int main(int argc, char** argv)
 	}
 	if (!infile.good()) {
 		std::cerr << "error while reading file headers\n";
-		return 0;
+		return 1;
 	}
 	std::cout << tagcount << " tags read" << std::endl;
 	if (RecordType != rtTimeHarp260PT3) {
 		std::cerr << "Unexpected record type, was expecting TimeHarp260P T3 data." << std::endl;
-		return 0;
+		return 1;
 	}
 
 	std::cout << "estimated number of useful histogram channels " << GlobRes / Resolution << std::endl;
@@ -209,7 +209,7 @@ int main(int argc, char** argv)
 		TTTRRecord = buffer[bufidx++];
 		if (!infile.good()) {
 			std::cerr << "Error while reading TTTR records from infile. Unexpected end of file." << std::endl;
-			return 0;
+			return 1;
 		}
 
 		const uint32_t SpecialBitMask = 0x80000000,
@@ -308,7 +308,7 @@ int main(int argc, char** argv)
 	std::ofstream outfile(argv[2], std::ios::out | std::ios::binary);
 	if (!outfile.good()) {
 		std::cerr << " error opening outfile\n";
-		return 0;
+		return 1;
 	}
 	struct BinHeader {
 		uint32_t PixX, PixY;
