@@ -8,6 +8,13 @@
 #include <algorithm>
 #include <cstdint>
 
+#define	DOPERFORMANCEANALYSIS
+#ifdef DOPERFORMANCEANALYSIS
+#include <windows.h>
+#undef max
+#undef min
+#endif // DOPERFORMANCEANALYSIS
+
 #pragma pack(8)
 
 // some important Tag Idents (TTagHead.Ident) that we will need to read the most common content of a PTU file
@@ -182,6 +189,12 @@ int main(int argc, char** argv)
 	uint32_t maxDtime = 0; // max val in histogram
 	uint32_t TTTRRecord = 0;
 
+#ifdef DOPERFORMANCEANALYSIS
+	__int64 pcFreq = 0, pcStart = 0, pcStop = 0;
+	QueryPerformanceFrequency((LARGE_INTEGER*)& pcFreq);
+	QueryPerformanceCounter((LARGE_INTEGER*)& pcStart);
+#endif
+
 	for (int64_t recnum = 0; recnum < NumRecords; ++recnum) {
 		infile.read((char*)& TTTRRecord, 4);
 		if (!infile.good()) {
@@ -274,6 +287,12 @@ int main(int argc, char** argv)
 	std::cout << " \ntotal frames " << framecounter << "\ntotal lines " << totallines << std::endl;
 	std::cout << "max Dtime " << maxDtime << std::endl;
 	infile.close();
+#ifdef DOPERFORMANCEANALYSIS
+	QueryPerformanceCounter((LARGE_INTEGER*)& pcStop);
+	double duration = double(pcStop - pcStart) / double(pcFreq);
+	std::cout << "Time for execution: " << duration << " s (" << duration / NumRecords 
+		<< " s per record)" << std::endl;
+#endif
 	std::cout << "Writing outfile." << std::endl;
 	std::ofstream outfile(argv[2], std::ios::out | std::ios::binary);
 	if (!outfile.good()) {
