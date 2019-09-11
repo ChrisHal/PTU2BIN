@@ -1,0 +1,4 @@
+TODOs
+2019-09-11
+Add support for counting of all channels. Idea: Zero or negative channel
+number indicates that we want data from all channels.

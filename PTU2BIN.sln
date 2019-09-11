@@ -7,6 +7,11 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "PTU2BIN", "PTU2BIN\PTU2BIN.
 EndProject
 Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "convertPTUs", "convertPTUs\convertPTUs.pyproj", "{0A6C754D-B31F-4BCC-BCD6-807EAAC1D748}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{0405B853-71DC-4EB3-B082-8CA6AD8E791B}"
+	ProjectSection(SolutionItems) = preProject
+		TODO.txt = TODO.txt
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
