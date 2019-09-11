@@ -294,6 +294,7 @@ int main(int argc, char** argv)
 			}
 		}
 	}
+	delete[] buffer;
 	std::cout << " \ntotal frames " << framecounter << "\ntotal lines " << totallines << std::endl;
 	std::cout << "max Dtime " << maxDtime << std::endl;
 	infile.close();
