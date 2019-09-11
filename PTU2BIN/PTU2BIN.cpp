@@ -241,7 +241,7 @@ int main(int argc, char** argv)
 					// process line data:
 					if ((linecounter >= 0)&&(linecounter < PixY)) {
 						uint32_t* lp = histogram + linecounter * MAX_CHANNELS * PixX;
-						for (const PixelTime& pt : pixeltimes) {
+						for (auto pt : pixeltimes) {
 							int64_t x = std::max(int64_t(0), std::min(((int64_t(pt.pixeltime) * PixX) / lineduration), PixX - 1));
 							unsigned int dt = pt.dtime;
 							if (dt < MAX_CHANNELS) {
