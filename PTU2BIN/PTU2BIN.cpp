@@ -105,7 +105,7 @@ int main(int argc, char** argv)
 		return 1;
 	}
 	std::cout << "File version: " << Version << std::endl;
-	unsigned int channelofinterest = 1;
+	int channelofinterest = 1;
 	if (argc == 4) channelofinterest = atoi(argv[3])-1;
 	int64_t NumRecords = 0, RecordType = 0, PixX = 0, PixY = 0, TrgFrame = 0, TrgLineStart = 0, TrgLineStop = 0;
 	const unsigned int MAX_CHANNELS = 512; // number of histogramm channels, same as max Dtime?
@@ -179,7 +179,13 @@ int main(int argc, char** argv)
 
 	std::cout << "estimated number of useful histogram channels " << GlobRes / Resolution << std::endl;
 	std::cout << "total # records in file: " << NumRecords << std::endl;
-	std::cout << "Evaluating channel " << (channelofinterest+1) << " only." << std::endl;
+	if (channelofinterest >= 0) {
+		std::cout << "Evaluating channel " << (channelofinterest + 1) << " only." << std::endl;
+	}
+	else
+	{
+		std::cout << "Evaluating all channels." << std::endl;
+	}
 	const int64_t T3WRAPAROUND = 1024;
 	int64_t oflcorrection = 0, lastlinestart = -1, lastlinestop = -1, lineduration = -1, linecounter = -1 /*skip 1st line*/, 
 		totallines = 0,
@@ -295,16 +301,14 @@ int main(int argc, char** argv)
 		}
 		else // photon detected
 		{
-			if (isrecordingline && linecounter>=0) {
+			if (isrecordingline && (linecounter>=0) && ((channelofinterest < 0) || (channel == channelofinterest))) {
 				truensync = oflcorrection + nsync;
-				if (channel == channelofinterest) {
-					int64_t pixeltime = truensync - lastlinestart;
-					// store for later use:
-					PixelTime pt;
-					pt.dtime = dtime;
-					pt.pixeltime = pixeltime;
-					pixeltimes.push_back(pt);
-				}
+				int64_t pixeltime = truensync - lastlinestart;
+				// store for later use:
+				PixelTime pt;
+				pt.dtime = dtime;
+				pt.pixeltime = pixeltime;
+				pixeltimes.push_back(pt);
 			}
 		}
 	}
