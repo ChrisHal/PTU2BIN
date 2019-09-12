@@ -14,6 +14,8 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
+#include <cstdio>
+#include <io.h>
 
 //#define	DOPERFORMANCEANALYSIS
 #ifdef DOPERFORMANCEANALYSIS
@@ -73,6 +75,9 @@ struct TagHead {
 
 int main(int argc, char** argv)
 {
+	// check if we are running from a terminal
+	bool isterminal = _isatty(_fileno(stdout));
+
 	if ((argc < 3)||(argc>4)) {
 		std::cerr << "Usage: " << argv[0] << " <infile> <outfile> [<channel no.>]" << std::endl;
 		return 1;
@@ -272,8 +277,10 @@ int main(int argc, char** argv)
 					if (linecounter == PixY) {
 						++framecounter;
 						framehasstarted = false;
-						const char SPINNER[] = "-\\|/";
-						std::cout << SPINNER[framecounter & 3] << "\r" << std::flush; // NOTE: this has no significant effect on performance (tested)
+						if (isterminal) { // show progress indicator only in terminal sessions
+							const char SPINNER[] = "-\\|/";
+							std::cout << SPINNER[framecounter & 3] << "\r" << std::flush; // NOTE: this has no significant effect on performance (tested)
+						}
 						linecounter = -1;  // skip 1st line
 					}
 				}
