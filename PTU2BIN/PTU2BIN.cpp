@@ -1,11 +1,11 @@
 // Tool to convert 3T PTU file from PicoQuant SymphoTime
 // to PicoQuant BIN format (= pre-histogrammed data)
 //
-// As of now, only one specific format ist supported.
+// As of now, only one specific format is supported.
 //
 // (c) 2019 Christian R. Halaszovich
 // Some parts are based on demo code from PicoQuant
-// (see their GitHup repo)
+// (see their GitHub repo)
 //
 
 #include <iostream>
@@ -26,8 +26,7 @@
 
 #pragma pack(8)
 
-// some important Tag Idents (TTagHead.Ident) that we will need to read the most common content of a PTU file
-// check the output of this program and consult the tag dictionary if you need more
+// some important Tag Idents (TTagHead.Ident)
 const char TTTRTagTTTRRecType[] = "TTResultFormat_TTTRRecType";
 const char TTTRTagNumRecords[] = "TTResult_NumberOfRecords"; // Number of TTTR Records in the File;
 const char TTTRTagRes[] = "MeasDesc_Resolution";       // Resolution for the Dtime (T3 Only)
@@ -292,9 +291,6 @@ int main(int argc, char** argv)
 				}
 				if (trigger & TrgFrameMask) { // we kind of ignore it, since it seems to be unreliable
 					framehasstarted = true;
-//					if (isrecordingline) {
-//						std::cout << "WARNING: still recording line? trigger was " << trigger << ".\n";
-//					}
 					lastframetime = truensync;
 				}
 			}
