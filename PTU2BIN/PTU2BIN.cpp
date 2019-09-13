@@ -342,8 +342,13 @@ int main(int argc, char** argv)
 			outfile.write((char*)(histogram + y * PixX * MAX_CHANNELS + x * MAX_CHANNELS), sizeof(uint32_t) * maxDtime);
 		}
 	}
-	outfile.close();
 	delete[] histogram;
+	if (!outfile.good()) {
+		std::cerr << "Error while writing outfile.\n";
+		outfile.close();
+		return 1;
+	}
+	outfile.close();
 	std::cout << "Done." << std::endl;
 	return 0;
 }
