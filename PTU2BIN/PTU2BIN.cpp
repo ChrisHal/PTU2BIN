@@ -26,6 +26,12 @@
 
 #pragma pack(8)
 
+// It seems that a certain number of lines should be skipped when the PTU
+// file is processed. Here we define how many. In our system is 1 line.
+// I do not know yet if this is universally true. Might be a bug in SymphoTime
+// or be specific to our system.
+const int	LINES_TO_SKIP = 1;
+
 // some important Tag Idents (TTagHead.Ident)
 const char TTTRTagTTTRRecType[] = "TTResultFormat_TTTRRecType";
 const char TTTRTagNumRecords[] = "TTResult_NumberOfRecords"; // Number of TTTR Records in the File;
@@ -186,7 +192,7 @@ int main(int argc, char** argv)
 		std::cout << "Evaluating all channels." << std::endl;
 	}
 	const int64_t T3WRAPAROUND = 1024;
-	int64_t oflcorrection = 0, lastlinestart = -1, lastlinestop = -1, lineduration = -1, linecounter = -1 /*skip 1st line*/, 
+	int64_t oflcorrection = 0, lastlinestart = -1, lastlinestop = -1, lineduration = -1, linecounter = -LINES_TO_SKIP /*skip lines*/, 
 		totallines = 0,
 		framecounter = 0, lastframetime = -1, truensync = 0;
 	unsigned int TrgLineStartMask = 1 << (TrgLineStart - 1), TrgLineStopMask = 1 << (TrgLineStop - 1),
@@ -286,7 +292,7 @@ int main(int argc, char** argv)
 							const char SPINNER[] = "-\\|/";
 							std::cout << SPINNER[framecounter & 3] << "\r" << std::flush; // NOTE: this has no significant effect on performance (tested)
 						}
-						linecounter = -1;  // skip 1st line
+						linecounter = -LINES_TO_SKIP;  // skip lines
 					}
 				}
 				if (trigger & TrgFrameMask) { // we kind of ignore it, since it seems to be unreliable
