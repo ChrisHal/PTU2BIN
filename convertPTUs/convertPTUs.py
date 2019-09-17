@@ -28,6 +28,8 @@ except getopt.GetoptError as err:
     # print help information and exit:
     print(err) # will print something like "option -a not recognized"
     print(helpmsg)
+    print("Press RETURN")
+    input()
     sys.exit(2)
 for o, a in opts:
     if o == "-c":
@@ -36,6 +38,8 @@ for o, a in opts:
         capturetofile = False
     elif o in ('-h', '--help'):
         print(helpmsg)
+        print("Press RETURN")
+        input()
         sys.exit(0)
 
 filelist=glob.glob('**/*.ptu', recursive=True)
