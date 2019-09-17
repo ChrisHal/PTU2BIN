@@ -9,6 +9,7 @@ Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "convertPTUs", "convertPTUs\
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{0405B853-71DC-4EB3-B082-8CA6AD8E791B}"
 	ProjectSection(SolutionItems) = preProject
+		README.txt = README.txt
 		TODO.txt = TODO.txt
 	EndProjectSection
 EndProject
