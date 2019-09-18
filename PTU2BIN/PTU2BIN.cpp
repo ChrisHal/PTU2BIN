@@ -15,7 +15,20 @@
 #include <cstdint>
 #include <cstring>
 #include <cstdio>
+#ifdef __linux__
+#include <unistd.h>
+bool my_isatty()
+{
+	return isatty(STDOUT_FILENO);
+}
+#elif _WIN32
 #include <io.h>
+bool my_isatty()
+{
+	return _isatty(_fileno(stdout));
+}
+#endif
+
 
 //#define	DOPERFORMANCEANALYSIS
 #ifdef DOPERFORMANCEANALYSIS
@@ -81,7 +94,7 @@ struct TagHead {
 int main(int argc, char** argv)
 {
 	// check if we are running from a terminal
-	bool isterminal = _isatty(_fileno(stdout));
+	bool isterminal = my_isatty();
 
 	if ((argc < 3)||(argc>4)) {
 		std::cerr << "Usage: " << argv[0] << " <infile> <outfile> [<channel no.>]" << std::endl;
