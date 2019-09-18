@@ -1,5 +1,5 @@
-2019-09-17
-Copyright by Christian R. Halaszovich
+Copyright (c) 2019 Christian R. Halaszovich
+(See LICENSE.txt for licensing information.)
 
 Tools to convert PicoQuant PTU files (as written by e.g. SymphoTime64) to
 BIN files containing pre-histogrammed data. This works for FLIM data in
