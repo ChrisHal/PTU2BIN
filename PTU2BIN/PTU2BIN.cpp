@@ -95,6 +95,19 @@ FileCreatingTime[] = "File_CreatingTime";
 #define rtMultiHarpNT3   0x00010307    // (SubID = $00 ,RecFmt: $01) (V1), T-Mode: $02 (T3), HW: $07 (MultiHarp150N)
 #define rtMultiHarpNT2   0x00010207    // (SubID = $00 ,RecFmt: $01) (V1), T-Mode: $02 (T2), HW: $07 (MultiHarp150N)
 
+// We should be able to work with HydraHarp, MultiHarp and TimeHarp260 T3 Format
+const uint32_t supported_record_types[] = { 0x00010304, 0x01010304, 0x00010305, 0x000010306, 0x00010307 };
+bool RecordTypeIsSupported(int64_t recordtype)
+{
+	const unsigned num = sizeof(supported_record_types)/sizeof(uint32_t);
+	for (unsigned i = 0; i < num; ++i) {
+		if (supported_record_types[i] == recordtype) {
+			return true;
+		}
+	}
+	return false;
+}
+
 // A Tag entry
 struct TagHead {
 	char Ident[32]; // Identifier of the tag
@@ -216,7 +229,7 @@ int main(int argc, char** argv)
 		return 1;
 	}
 	std::cout << tagcount << " tags read" << std::endl;
-	if (RecordType != rtTimeHarp260PT3) {
+	if (!RecordTypeIsSupported(RecordType)) {
 		std::cerr << "Unexpected record type, was expecting TimeHarp260P T3 data." << std::endl;
 		return 1;
 	}
