@@ -187,7 +187,11 @@ int main(int argc, char** argv)
 			if (strcmp(tghd.Ident, FileCreatingTime) == 0) {
 				time_t t = OLEtime2time_t(*((double*) & (tghd.TagValue)));
 				tm time;
+#ifdef _WIN32
 				gmtime_s(&time, &t);
+#elif __linux__
+				gmtime_r(&t, &time);
+#endif
 				char buf[26];
 				std::strftime(buf, sizeof(buf), "%c", &time);
 				std::cout << "File Creation Time: " << buf << std::endl;
