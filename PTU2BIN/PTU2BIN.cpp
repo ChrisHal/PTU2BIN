@@ -15,6 +15,9 @@
 #include <cstdint>
 #include <cstring>
 #include <cstdio>
+#include <cmath>
+#define __STDC_WANT_LIB_EXT1__
+#include <ctime>
 #ifdef __linux__
 #include <unistd.h>
 bool my_isatty()
@@ -39,6 +42,14 @@ bool my_isatty()
 
 #pragma pack(8)
 
+const double epochdiff = 25569.0; // days between 30/12/1899 (OLE epoch) and 01/01/1970 (UNIX epoch)
+// convert OLE time, a.k.a. MS time to C time_t
+time_t OLEtime2time_t(double oatime)
+{
+	time_t res((time_t)((oatime-epochdiff) * 24.0 * 60.0 * 60.0));
+	return res;
+}
+
 // It seems that a certain number of lines should be skipped when the PTU
 // file is processed. Here we define how many. In our system is 1 line.
 // I do not know yet if this is universally true. Might be a bug in SymphoTime
@@ -54,7 +65,8 @@ const char TTTRTagGlobRes[] = "MeasDesc_GlobalResolution"; // Global Resolution 
 const char FileTagEnd[] = "Header_End";                // Always appended as last tag (BLOCKEND)
 const char ImgHdrPixX[] = "ImgHdr_PixX", ImgHdrPixY[] = "ImgHdr_PixY",
 ImgHdrPixResol[] = "ImgHdr_PixResol", ImgHdrLineStart[] = "ImgHdr_LineStart",
-ImgHdrLineStop[] = "ImgHdr_LineStop", ImgHdrFrame[] = "ImgHdr_Frame";
+ImgHdrLineStop[] = "ImgHdr_LineStop", ImgHdrFrame[] = "ImgHdr_Frame",
+FileCreatingTime[] = "File_CreatingTime";
 
 // TagTypes  (TTagHead.Typ)
 #define tyEmpty8      0xFFFF0008
@@ -170,6 +182,16 @@ int main(int argc, char** argv)
 			}
 			if (strcmp(tghd.Ident, ImgHdrPixResol) == 0)
 				PixResol = *(double*) & (tghd.TagValue);
+			break;
+		case tyTDateTime:
+			if (strcmp(tghd.Ident, FileCreatingTime) == 0) {
+				time_t t = OLEtime2time_t(*((double*) & (tghd.TagValue)));
+				tm time;
+				gmtime_s(&time, &t);
+				char buf[26];
+				std::strftime(buf, sizeof(buf), "%c", &time);
+				std::cout << "File Creation Time: " << buf << std::endl;
+			}
 			break;
 		case tyFloat8Array:
 		case tyAnsiString:
@@ -327,10 +349,13 @@ int main(int argc, char** argv)
 			}
 		}
 	}
+	infile.close();
 	delete[] buffer;
 	std::cout << " \ntotal frames " << framecounter << "\ntotal lines " << totallines << std::endl;
 	std::cout << "max Dtime " << maxDtime << std::endl;
-	infile.close();
+	double microsec_lastpixeltime = double(lastlinestop - lastlinestart) * GlobRes * 1.0e6 / double(PixX);
+	// round dwell time to nearest 0.1 micros:
+	std::cout << "pixel dwell time " << std::round(microsec_lastpixeltime*10.0)/10.0 << " microseconds" << std::endl;
 #ifdef DOPERFORMANCEANALYSIS
 	QueryPerformanceCounter((LARGE_INTEGER*)& pcStop);
 	double duration = double(pcStop - pcStart) / double(pcFreq);

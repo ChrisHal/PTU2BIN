@@ -10,7 +10,7 @@ when run from a script, e.g. convertPTUs.py) - done
 
 2019-09-18
 Some more info in output would be nice:
-1. time per pixel = pixel dwell time
-2. date/time of recording (I hate date/time handling...)
+1. time per pixel = pixel dwell time - done
+2. date/time of recording (I hate date/time handling...) - done (testing needed?)
 3. max. countrate per pixel (i.e. for the brightest pixel)
 (can be calculated from from counts and number of frames and dwelltime?)
