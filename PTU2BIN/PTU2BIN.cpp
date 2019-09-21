@@ -32,7 +32,6 @@ bool my_isatty()
 }
 #endif
 
-
 //#define	DOPERFORMANCEANALYSIS
 #ifdef DOPERFORMANCEANALYSIS
 #include <windows.h>
@@ -63,10 +62,10 @@ const char TTTRTagRes[] = "MeasDesc_Resolution";       // Resolution for the Dti
 const char TTSyncRate[] = "TTResult_SyncRate";	// snyc rate, usually repetiton rate of laser
 const char TTTRTagGlobRes[] = "MeasDesc_GlobalResolution"; // Global Resolution of TimeTag(T2) /NSync (T3). usually intervall between laserpulses
 const char FileTagEnd[] = "Header_End";                // Always appended as last tag (BLOCKEND)
-const char ImgHdrPixX[] = "ImgHdr_PixX", ImgHdrPixY[] = "ImgHdr_PixY",
-ImgHdrPixResol[] = "ImgHdr_PixResol", ImgHdrLineStart[] = "ImgHdr_LineStart",
-ImgHdrLineStop[] = "ImgHdr_LineStop", ImgHdrFrame[] = "ImgHdr_Frame",
-FileCreatingTime[] = "File_CreatingTime";
+const char	ImgHdrPixX[] = "ImgHdr_PixX", ImgHdrPixY[] = "ImgHdr_PixY",
+			ImgHdrPixResol[] = "ImgHdr_PixResol", ImgHdrLineStart[] = "ImgHdr_LineStart",
+			ImgHdrLineStop[] = "ImgHdr_LineStop", ImgHdrFrame[] = "ImgHdr_Frame",
+			FileCreatingTime[] = "File_CreatingTime";
 
 // TagTypes  (TTagHead.Typ)
 #define tyEmpty8      0xFFFF0008
@@ -96,9 +95,9 @@ FileCreatingTime[] = "File_CreatingTime";
 #define rtMultiHarpNT2   0x00010207    // (SubID = $00 ,RecFmt: $01) (V1), T-Mode: $02 (T2), HW: $07 (MultiHarp150N)
 
 // We should be able to work with HydraHarp, MultiHarp and TimeHarp260 T3 Format
-const uint32_t supported_record_types[] = { 0x00010304, 0x01010304, 0x00010305, 0x000010306, 0x00010307 };
 bool RecordTypeIsSupported(int64_t recordtype)
 {
+	const uint32_t supported_record_types[] = { 0x00010304, 0x01010304, 0x00010305, 0x000010306, 0x00010307 };
 	const unsigned num = sizeof(supported_record_types)/sizeof(uint32_t);
 	for (unsigned i = 0; i < num; ++i) {
 		if (supported_record_types[i] == recordtype) {
@@ -131,13 +130,13 @@ int main(int argc, char** argv)
 		std::cerr << "error opening infile" << std::endl;
 		return 1;
 	}	// first, test if it is a valid file
-	char Magic[8];
-	infile.read(Magic, sizeof(Magic));
+	char magic[8];
+	infile.read(magic, sizeof(magic));
 	if (!infile.good()) {
 		std::cerr << "error reading infile" << std::endl;
 		return 1;
 	}
-	if (std::strncmp(Magic, "PQTTTR", 6) != 0) {
+	if (std::strncmp(magic, "PQTTTR", 6) != 0) {
 		std::cerr << "not a valid PTU file" << std::endl;
 		return 1;
 	}
@@ -150,36 +149,38 @@ int main(int argc, char** argv)
 	std::cout << "File version: " << Version << std::endl;
 	int channelofinterest = 1;
 	if (argc == 4) channelofinterest = atoi(argv[3])-1;
-	int64_t NumRecords = 0, RecordType = 0, PixX = 0, PixY = 0, TrgFrame = 0, TrgLineStart = 0, TrgLineStop = 0;
+	int64_t num_records = 0, record_type = 0, pix_x = 0, pix_y = 0, trg_frame = 0, trg_linestart = 0, trg_linestop = 0;
 	const unsigned int MAX_CHANNELS = 512; // number of histogramm channels, same as max Dtime?
 	double Resolution = 0.0, // resolution for Dtime
 		GlobRes = 0.0, // resolution for global timer
 		PixResol = 0.0;
 	TagHead tghd;
 	unsigned int tagcount = 0;
+	////////////
+	// read tags:
 	while (infile.read((char*)& tghd, sizeof(tghd)).good()) {
 		++tagcount;
 		switch (tghd.Typ)
 		{
 		case tyInt8:
 			if (strcmp(tghd.Ident, TTTRTagNumRecords) == 0) // Number of records
-				NumRecords = tghd.TagValue;
+				num_records = tghd.TagValue;
 			if (strcmp(tghd.Ident, TTTRTagTTTRRecType) == 0) // TTTR RecordType
-				RecordType = tghd.TagValue;
+				record_type = tghd.TagValue;
 			if (strcmp(tghd.Ident, ImgHdrPixX) == 0) {
-				PixX = tghd.TagValue;
-				std::cout << "pix. x " << PixX << std::endl;
+				pix_x = tghd.TagValue;
+				std::cout << "pix. x " << pix_x << std::endl;
 			}
 			if (strcmp(tghd.Ident, ImgHdrPixY) == 0) {
-				PixY = tghd.TagValue;
-				std::cout << "pix. y " << PixY << std::endl;
+				pix_y = tghd.TagValue;
+				std::cout << "pix. y " << pix_y << std::endl;
 			}
 			if (strcmp(tghd.Ident, ImgHdrFrame) == 0)
-				TrgFrame = tghd.TagValue;
+				trg_frame = tghd.TagValue;
 			if (strcmp(tghd.Ident, ImgHdrLineStart) == 0)
-				TrgLineStart = tghd.TagValue;
+				trg_linestart = tghd.TagValue;
 			if (strcmp(tghd.Ident, ImgHdrLineStop) == 0)
-				TrgLineStop = tghd.TagValue;
+				trg_linestop = tghd.TagValue;
 			if (strcmp(tghd.Ident, TTSyncRate) == 0) {
 				std::cout << "Sync rate " << tghd.TagValue << " Hz" << std::endl;
 			}
@@ -224,18 +225,19 @@ int main(int argc, char** argv)
 			break; // all headers have been read
 		}
 	}
+	/// done reading tags
+	// TODO check if we got all info we need
 	if (!infile.good()) {
 		std::cerr << "error while reading file headers\n";
 		return 1;
 	}
 	std::cout << tagcount << " tags read" << std::endl;
-	if (!RecordTypeIsSupported(RecordType)) {
-		std::cerr << "Unexpected record type, was expecting TimeHarp260P T3 data." << std::endl;
+	if (!RecordTypeIsSupported(record_type)) {
+		std::cerr << "Unexpected record type, was expecting TimeHarp260P (or compatible) T3 data." << std::endl;
 		return 1;
 	}
-
 	std::cout << "estimated number of useful histogram channels " << GlobRes / Resolution << std::endl;
-	std::cout << "total # records in file: " << NumRecords << std::endl;
+	std::cout << "total # records in file: " << num_records << std::endl;
 	if (channelofinterest >= 0) {
 		std::cout << "Evaluating channel " << (channelofinterest + 1) << " only." << std::endl;
 	}
@@ -243,12 +245,13 @@ int main(int argc, char** argv)
 	{
 		std::cout << "Evaluating all channels." << std::endl;
 	}
+
 	const int64_t T3WRAPAROUND = 1024;
 	int64_t oflcorrection = 0, lastlinestart = -1, lastlinestop = -1, lineduration = -1, linecounter = -LINES_TO_SKIP /*skip lines*/, 
 		totallines = 0,
 		framecounter = 0, lastframetime = -1, truensync = 0;
-	unsigned int TrgLineStartMask = 1 << (TrgLineStart - 1), TrgLineStopMask = 1 << (TrgLineStop - 1),
-		TrgFrameMask = 1 << (TrgFrame - 1);
+	unsigned int TrgLineStartMask = 1 << (trg_linestart - 1), TrgLineStopMask = 1 << (trg_linestop - 1),
+		TrgFrameMask = 1 << (trg_frame - 1);
 	bool isrecordingline = false, framehasstarted = false;
 
 	// place for temporary storage of line data
@@ -259,8 +262,8 @@ int main(int argc, char** argv)
 	std::vector<PixelTime> pixeltimes;
 
 	// space for histogramm data
-	uint32_t* histogram = new uint32_t[MAX_CHANNELS * PixX * PixY];
-	std::memset(histogram, 0, sizeof(uint32_t)*MAX_CHANNELS * PixX * PixY);
+	uint32_t* histogram = new uint32_t[MAX_CHANNELS * pix_x * pix_y];
+	std::memset(histogram, 0, sizeof(uint32_t)*MAX_CHANNELS * pix_x * pix_y);
 	uint32_t maxDtime = 0; // max val in histogram
 	uint32_t TTTRRecord = 0;
 
@@ -269,10 +272,13 @@ int main(int argc, char** argv)
 	QueryPerformanceFrequency((LARGE_INTEGER*)& pcFreq);
 	QueryPerformanceCounter((LARGE_INTEGER*)& pcStart);
 #endif
+	// preapare input buffer
 	const size_t BUFFSIZE = 1024; // bigger buffer did not help on test machine
 	auto buffer = new uint32_t[BUFFSIZE];
-	size_t bufidx = 0, bufnumelements = 0, recordsremaining = NumRecords;
-	for (int64_t recnum = 0; recnum < NumRecords; ++recnum) {
+	size_t bufidx = 0, bufnumelements = 0, recordsremaining = num_records;
+	//////////////
+	// start processing of records
+	for (int64_t recnum = 0; recnum < num_records; ++recnum) {
 		if (bufidx == bufnumelements) {
 			// buffer is empty
 			size_t numtoread = std::min(BUFFSIZE, recordsremaining);
@@ -281,12 +287,11 @@ int main(int argc, char** argv)
 			bufnumelements = numtoread;
 			bufidx = 0;
 		}
-		TTTRRecord = buffer[bufidx++];
 		if (!infile.good()) {
 			std::cerr << "Error while reading TTTR records from infile. Unexpected end of file." << std::endl;
 			return 1;
 		}
-
+		TTTRRecord = buffer[bufidx++];
 		const uint32_t SpecialBitMask = 0x80000000,
 			nsyncmask = 1023,
 			dtimemask = 32767 << 10,
@@ -324,10 +329,10 @@ int main(int argc, char** argv)
 					lastlinestop = truensync;
 					lineduration = lastlinestop - lastlinestart;
 					// process line data:
-					if ((linecounter >= 0)&&(linecounter < PixY)) {
-						uint32_t* lp = histogram + linecounter * MAX_CHANNELS * PixX;
+					if ((linecounter >= 0)&&(linecounter < pix_y)) {
+						uint32_t* lp = histogram + linecounter * MAX_CHANNELS * pix_x;
 						for (auto pt : pixeltimes) {
-							int64_t x = std::max(int64_t(0), std::min(((int64_t(pt.pixeltime) * PixX) / lineduration), PixX - 1));
+							int64_t x = std::max(int64_t(0), std::min(((int64_t(pt.pixeltime) * pix_x) / lineduration), pix_x - 1));
 							unsigned int dt = pt.dtime;
 							if (dt < MAX_CHANNELS) {
 								++lp[x * MAX_CHANNELS + dt];
@@ -337,7 +342,7 @@ int main(int argc, char** argv)
 					}
 					pixeltimes.clear();
 					++linecounter;
-					if (linecounter == PixY) {
+					if (linecounter == pix_y) {
 						++framecounter;
 						framehasstarted = false;
 						if (isterminal) { // show progress indicator only in terminal sessions
@@ -366,20 +371,20 @@ int main(int argc, char** argv)
 			}
 		}
 	}
+#ifdef DOPERFORMANCEANALYSIS
+	QueryPerformanceCounter((LARGE_INTEGER*)& pcStop);
+	double duration = double(pcStop - pcStart) / double(pcFreq);
+	std::cout << "Time for execution: " << duration << " s (" << duration / NumRecords
+		<< " s per record)" << std::endl;
+#endif
 	infile.close();
 	delete[] buffer;
 	std::cout << " \ntotal frames " << framecounter << "\ntotal lines " << totallines << std::endl;
 	std::cout << "max Dtime " << maxDtime << std::endl;
-	double microsec_lastpixeltime = double(lastlinestop - lastlinestart) * GlobRes * 1.0e6 / double(PixX);
+	double microsec_lastpixeltime = double(lastlinestop - lastlinestart) * GlobRes * 1.0e6 / double(pix_x);
 	// round dwell time to nearest 0.1 micros:
 	std::cout << "pixel dwell time " << std::round(microsec_lastpixeltime*10.0)/10.0 << " microseconds" << std::endl;
-#ifdef DOPERFORMANCEANALYSIS
-	QueryPerformanceCounter((LARGE_INTEGER*)& pcStop);
-	double duration = double(pcStop - pcStart) / double(pcFreq);
-	std::cout << "Time for execution: " << duration << " s (" << duration / NumRecords 
-		<< " s per record)" << std::endl;
-#endif
-	std::cout << "Writing outfile." << std::endl;
+	std::cout << "\nWriting outfile." << std::endl;
 	std::ofstream outfile(argv[2], std::ios::out | std::ios::binary);
 	if (!outfile.good()) {
 		std::cerr << " error opening outfile\n";
@@ -392,15 +397,15 @@ int main(int argc, char** argv)
 		float TimeResol;
 	} bh;
 	++maxDtime; // need to store one datapoint more than max Dtime
-	bh.PixX = (uint32_t)PixX;
-	bh.PixY = (uint32_t)PixY;
+	bh.PixX = (uint32_t)pix_x;
+	bh.PixY = (uint32_t)pix_y;
 	bh.PixResol = (float)PixResol;
 	bh.TCSPCChannels = maxDtime;
 	bh.TimeResol = (float)(Resolution * 1e9); // in ns
 	outfile.write((char*)& bh, sizeof(bh));
-	for (int64_t y = 0; y < PixY; ++y) {
-		for (int64_t x = 0; x < PixX; ++x) {
-			outfile.write((char*)(histogram + y * PixX * MAX_CHANNELS + x * MAX_CHANNELS), sizeof(uint32_t) * maxDtime);
+	for (int64_t y = 0; y < pix_y; ++y) {
+		for (int64_t x = 0; x < pix_x; ++x) {
+			outfile.write((char*)(histogram + y * pix_x * MAX_CHANNELS + x * MAX_CHANNELS), sizeof(uint32_t) * maxDtime);
 		}
 	}
 	delete[] histogram;
