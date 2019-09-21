@@ -118,7 +118,11 @@ struct TagHead {
 int main(int argc, char** argv)
 {
 	// check if we are running from a terminal
+#ifdef DOPERFORMANCEANALYSIS
+	bool isterminal = false;
+#else // DOPERFORMANCEANALYSIS
 	bool isterminal = my_isatty();
+#endif
 
 	if ((argc < 3)||(argc>4)) {
 		std::cerr << "Usage: " << argv[0] << " <infile> <outfile> [<channel no.>]" << std::endl;
@@ -374,7 +378,7 @@ int main(int argc, char** argv)
 #ifdef DOPERFORMANCEANALYSIS
 	QueryPerformanceCounter((LARGE_INTEGER*)& pcStop);
 	double duration = double(pcStop - pcStart) / double(pcFreq);
-	std::cout << "Time for execution: " << duration << " s (" << duration / NumRecords
+	std::cout << "Time for execution: " << duration << " s (" << duration / num_records
 		<< " s per record)" << std::endl;
 #endif
 	infile.close();
