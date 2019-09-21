@@ -276,7 +276,7 @@ int main(int argc, char** argv)
 	QueryPerformanceFrequency((LARGE_INTEGER*)& pcFreq);
 	QueryPerformanceCounter((LARGE_INTEGER*)& pcStart);
 #endif
-	// preapare input buffer
+	// prepare input buffer
 	const size_t BUFFSIZE = 1024; // bigger buffer did not help on test machine
 	auto buffer = new uint32_t[BUFFSIZE];
 	size_t bufidx = 0, bufnumelements = 0, recordsremaining = num_records;
