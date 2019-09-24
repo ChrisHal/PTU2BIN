@@ -42,7 +42,7 @@ bool my_isatty()
 
 #pragma pack(8)
 
-int ExportIBWFile(std::ostream& os, uint32_t* histogram, int64_t pix_x,
+extern int ExportIBWFile(std::ostream& os, uint32_t* histogram, int64_t pix_x,
 	int64_t pix_y, double res_space, double res_time, int64_t num_hist_channels,
 	int64_t max_export_channel, const std::string& wavename, time_t filedate);
 

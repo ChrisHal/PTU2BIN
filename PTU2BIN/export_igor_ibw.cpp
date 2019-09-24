@@ -35,7 +35,7 @@ int ExportIBWFile(std::ostream& os, uint32_t* histogram, int64_t pix_x,
 	bh.wfmSize = int32_t(numbytes_wh + sizeof(uint32_t) * npnts);
 	// we will calculate checksum later, all other entries in bh remain 0
 
-	// The 32bit limit might create a problem about 90 years in the future...
+	// The 32bit limit might create a problem in the future... (Feb. 6th 2040?)
 	wh.creationDate = uint32_t(filetime + EPOCHDIFF_MAC_UNIX);
 	wh.modDate = wh.creationDate;
 	wh.type = NT_UNSIGNED | NT_I32;
