@@ -344,3 +344,4 @@ healthchecksdb
 /convertPTUs/test2.ptu
 *.diagsession
 *.ibw
+*.bin

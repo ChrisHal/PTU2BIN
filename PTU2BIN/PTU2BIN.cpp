@@ -160,7 +160,7 @@ int main(int argc, char** argv)
 	bool isterminal = my_isatty();
 #endif
 
-	if ((argc < 3)||(argc>4)) {
+	if ((argc < 3) || (argc > 4)) {
 		std::cerr << "Usage: " << argv[0] << " <infile> <outfile> [<channel no.>]" << std::endl;
 		return 1;
 	}
@@ -189,7 +189,7 @@ int main(int argc, char** argv)
 	}
 	std::cout << "File version: " << Version << std::endl;
 	int channelofinterest = 1;
-	if (argc == 4) channelofinterest = atoi(argv[3])-1;
+	if (argc == 4) channelofinterest = atoi(argv[3]) - 1;
 	int64_t num_records = 0, record_type = 0, pix_x = 0, pix_y = 0, trg_frame = 0, trg_linestart = 0, trg_linestop = 0;
 	const unsigned int MAX_CHANNELS = 512; // number of histogramm channels, same as max Dtime?
 	double Resolution = 0.0, // resolution for Dtime
@@ -289,7 +289,7 @@ int main(int argc, char** argv)
 	}
 
 	const int64_t T3WRAPAROUND = 1024;
-	int64_t oflcorrection = 0, lastlinestart = -1, lastlinestop = -1, lineduration = -1, linecounter = -LINES_TO_SKIP /*skip lines*/, 
+	int64_t oflcorrection = 0, lastlinestart = -1, lastlinestop = -1, lineduration = -1, linecounter = -LINES_TO_SKIP /*skip lines*/,
 		totallines = 0,
 		framecounter = 0, lastframetime = -1, truensync = 0;
 	unsigned int TrgLineStartMask = 1 << (trg_linestart - 1), TrgLineStopMask = 1 << (trg_linestop - 1),
@@ -305,7 +305,7 @@ int main(int argc, char** argv)
 
 	// space for histogramm data
 	uint32_t* histogram = new uint32_t[MAX_CHANNELS * pix_x * pix_y];
-	std::memset(histogram, 0, sizeof(uint32_t)*MAX_CHANNELS * pix_x * pix_y);
+	std::memset(histogram, 0, sizeof(uint32_t) * MAX_CHANNELS * pix_x * pix_y);
 	uint32_t maxDtime = 0; // max val in histogram
 	uint32_t TTTRRecord = 0;
 
@@ -324,7 +324,7 @@ int main(int argc, char** argv)
 		if (bufidx == bufnumelements) {
 			// buffer is empty
 			size_t numtoread = std::min(BUFFSIZE, recordsremaining);
-			infile.read((char*)buffer, sizeof(uint32_t)* numtoread);
+			infile.read((char*)buffer, sizeof(uint32_t) * numtoread);
 			recordsremaining -= numtoread;
 			bufnumelements = numtoread;
 			bufidx = 0;
@@ -339,10 +339,10 @@ int main(int argc, char** argv)
 			dtimemask = 32767 << 10,
 			channelmask = 63 << 25;
 		unsigned	nsync = TTTRRecord & nsyncmask,
-					dtime = (TTTRRecord & dtimemask) >> 10,
-					channel = (TTTRRecord & channelmask) >> 25;
+			dtime = (TTTRRecord & dtimemask) >> 10,
+			channel = (TTTRRecord & channelmask) >> 25;
 
-		if (TTTRRecord&SpecialBitMask)
+		if (TTTRRecord & SpecialBitMask)
 		{
 			if (channel == 0x3F) //overflow
 			{
@@ -371,7 +371,7 @@ int main(int argc, char** argv)
 					lastlinestop = truensync;
 					lineduration = lastlinestop - lastlinestart;
 					// process line data:
-					if ((linecounter >= 0)&&(linecounter < pix_y)) {
+					if ((linecounter >= 0) && (linecounter < pix_y)) {
 						uint32_t* lp = histogram + linecounter * MAX_CHANNELS * pix_x;
 						for (auto pt : pixeltimes) {
 							int64_t x = std::max(int64_t(0), std::min(((int64_t(pt.pixeltime) * pix_x) / lineduration), pix_x - 1));
@@ -402,7 +402,7 @@ int main(int argc, char** argv)
 		}
 		else // photon detected
 		{
-			if (isrecordingline && (linecounter>=0) && ((channelofinterest < 0) || (channel == channelofinterest))) {
+			if (isrecordingline && (linecounter >= 0) && ((channelofinterest < 0) || (channel == channelofinterest))) {
 				truensync = oflcorrection + nsync;
 				int64_t pixeltime = truensync - lastlinestart;
 				// store for later use:
@@ -425,26 +425,56 @@ int main(int argc, char** argv)
 	std::cout << "max Dtime " << maxDtime << std::endl;
 	double microsec_lastpixeltime = double(lastlinestop - lastlinestart) * GlobRes * 1.0e6 / double(pix_x);
 	// round dwell time to nearest 0.1 micros:
-	std::cout << "pixel dwell time " << std::round(microsec_lastpixeltime*10.0)/10.0 << " microseconds" << std::endl;
+	std::cout << "pixel dwell time " << std::round(microsec_lastpixeltime * 10.0) / 10.0 << " microseconds" << std::endl;
 	++maxDtime; // need to store one datapoint more than max Dtime
-	std::cout << "\nWriting outfile." << std::endl;
+
+	// decide on the file format for export depending on the file extension given in the command line
+	auto poslastdot = outfilename.find_last_of('.');
+	std::string extension("bin"); // default to bin file
+	if (poslastdot != std::string::npos) {
+		extension = outfilename.substr(poslastdot + 1);
+	}
+	bool exporting_ibw;
+	if (extension == "ibw") {
+		exporting_ibw = true;
+		std::cout << "\nExporting Igor binary wave." << std::endl;
+	}
+	else {
+		std::cout << "\nExporting bin file." << std::endl;
+		exporting_ibw = false;
+	}
+
+	std::cout << "Writing outfile." << std::endl;
 	std::ofstream outfile(outfilename.c_str(), std::ios::out | std::ios::binary);
 	if (!outfile.good()) {
 		std::cerr << " error opening outfile\n";
 		return 1;
 	}
-	if (ExportBinFile(outfile, histogram, pix_x, pix_y, PixResol, Resolution, MAX_CHANNELS, maxDtime) != 0) {
-		std::cerr << "Error while writing outfile.\n";
+	int res = 0;
+	if (!exporting_ibw) {
+		res = ExportBinFile(outfile, histogram, pix_x, pix_y, PixResol, Resolution, MAX_CHANNELS, maxDtime);
+	}
+	else {
+		auto lastslash = outfilename.find_last_of("/\\");
+		std::string wavename("");
+		if (lastslash != std::string::npos) {
+			wavename = outfilename.substr(lastslash + 1, poslastdot - lastslash - 1);
+		}
+		else {
+			wavename = outfilename.substr(0, poslastdot);
+		}
+		std::cout << "wavename " << wavename << std::endl;
+		res = ExportIBWFile(outfile, histogram, pix_x, pix_y, PixResol, Resolution, MAX_CHANNELS,
+			maxDtime, wavename, filedate);
+	}
+	if (res != 0) {
 		outfile.close();
+		std::cerr << "Error while writing outfile.\n";
 		return 1;
 	}
 	outfile.close();
-	outfile.open("test1.ibw", std::ios::out | std::ios::binary);
-	std::cout << "experimentally write igor binary file" << std::endl;
-	ExportIBWFile(outfile, histogram, pix_x, pix_y, PixResol, Resolution, MAX_CHANNELS,
-		maxDtime, std::string("test1"), filedate);
+
 	delete[] histogram;
-	outfile.close();
 	std::cout << "Done." << std::endl;
 	return 0;
 }

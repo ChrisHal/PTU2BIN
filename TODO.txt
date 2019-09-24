@@ -17,4 +17,4 @@ Some more info in output would be nice:
 
 2019-09-24
 Add export to Igor Pro binary wave file. Decide on file-extension of
-outfilename parameter which format to use for export.
+outfilename parameter which format to use for export. - done
