@@ -18,7 +18,7 @@ int Checksum(short* data, int oldcksum, int numbytes)
 
 int ExportIBWFile(std::ostream& os, uint32_t* histogram, int64_t pix_x,
 	int64_t pix_y, double res_space, double res_time, int64_t num_hist_channels,
-	int64_t max_export_channel, const std::string& wavename)
+	int64_t max_export_channel, const std::string& wavename, time_t filetime)
 {
 	BinHeader5 bh;
 	// make sure the packing of the structs is as expected:
@@ -35,6 +35,9 @@ int ExportIBWFile(std::ostream& os, uint32_t* histogram, int64_t pix_x,
 	bh.wfmSize = int32_t(numbytes_wh + sizeof(uint32_t) * npnts);
 	// we will calculate checksum later, all other entries in bh remain 0
 
+	// The 32bit limit might create a problem about 90 years in the future...
+	wh.creationDate = uint32_t(filetime + EPOCHDIFF_MAC_UNIX);
+	wh.modDate = wh.creationDate;
 	wh.type = NT_UNSIGNED | NT_I32;
 	wavename.copy(wh.bname, MAX_WAVE_NAME5);
 	wh.whVersion = 1; // yes, for version 5 files files this smust be 1...
@@ -46,9 +49,13 @@ int ExportIBWFile(std::ostream& os, uint32_t* histogram, int64_t pix_x,
 	wh.nDim[0] = int32_t(pix_x);
 	wh.nDim[1] = int32_t(pix_y);
 	wh.nDim[2] = int32_t(max_export_channel);
-	wh.sfA[0] = wh.sfA[1] = res_space*1e-6; // res_space is in micrometer
-	wh.sfA[2] = res_time;
-
+	// The next hack is to avoid an unaligned access to 
+	// elements in the struct that should be 8 byte aligned
+	// (but are 4 byte aligned, 32bit legacy caode is that way...)
+	double dimdelta[3];
+	dimdelta[0] = dimdelta[1] = res_space*1e-6; // res_space is in micrometer
+	dimdelta[2] = res_time;
+	memcpy((void*)wh.sfA, (void*)dimdelta, 3 * sizeof(double));
 	short cksum = Checksum((short*)& bh, 0, sizeof(bh));
 	cksum = Checksum((short*)& wh, cksum, numbytes_wh);
 	bh.checksum = -cksum;

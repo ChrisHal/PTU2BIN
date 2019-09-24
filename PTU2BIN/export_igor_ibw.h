@@ -3,14 +3,15 @@
 #include <cstdint>
 
 constexpr auto NT_I32 = 0x20;		// 32 bit integer numbers. Requires Igor Pro 2.0 or later.;
-constexpr auto NT_I64 = 0x80;		// 64-bit integer numbers. Requires Igor Pro 7.0 or later.;
 constexpr auto NT_UNSIGNED = 0x40;	// Makes above signed integers unsigned. Requires Igor Pro 3.0 or later.;
 
 constexpr auto MAXDIMS = 4;
-constexpr auto MAX_WAVE_NAME2 = 18;	// Maximum length of wave name in version 1 and 2 files. Does not include the trailing null.;
 constexpr auto MAX_WAVE_NAME5 = 31;	// Maximum length of wave name in version 5 files. Does not include the trailing null.;
 constexpr auto MAX_UNIT_CHARS = 3;
 
+// Mac'c (deprecated) GetDateTime returnes seconde starting from 1.1.1904,
+// Unix's epoch is from 1.1.1970. This is in seconds.
+constexpr auto EPOCHDIFF_MAC_UNIX = 2082844800;
 
 struct BinHeader5 {
 	int16_t version;						// Version number for backwards compatibility.
@@ -28,7 +29,6 @@ struct BinHeader5 {
 };
 
 // compared to origianl, some pointer types have been converted to uint32_t for compilation for 64-bit
-#pragma pack(4)
 struct WaveHeader5 {
 	uint32_t next;			// link to next wave in linked list.
 
@@ -47,8 +47,12 @@ struct WaveHeader5 {
 
 	// Dimensioning info. [0] == rows, [1] == cols etc
 	int32_t nDim[MAXDIMS];				// Number of of items in a dimension -- 0 means no data.
-	double sfA[MAXDIMS];				// Index value for element e of dimension d = sfA[d]*e + sfB[d].
-	double sfB[MAXDIMS];
+	// CAUTION: The next element is NOT 8 byte aligned! This is why we need the ugly pack(4)
+	// or we work around it! I prefer to do so...
+	//double sfA[MAXDIMS];				// Index value for element e of dimension d = sfA[d]*e + sfB[d].
+	//double sfB[MAXDIMS];
+	char sfA[sizeof(double) * MAXDIMS];
+	char sfB[sizeof(double) * MAXDIMS];
 
 	// SI units
 	char dataUnits[MAX_UNIT_CHARS + 1];			// Natural data units go here - null if none.
@@ -56,8 +60,10 @@ struct WaveHeader5 {
 
 	short fsValid;						// TRUE if full scale values have meaning.
 	short whpad3;						// Reserved. Write zero. Ignore on read.
-	double topFullScale, botFullScale;	// The max and max full scale value for wave.
-
+	// The next 2 are out of aligment,too:
+	//double topFullScale, botFullScale;	// The max and max full scale value for wave.
+	// tweak aligment:
+	char topFullScale[8], botFullScale[8];
 	uint32_t dataEUnits;					// Used in memory only. Write zero. Ignore on read.
 	uint32_t dimEUnits[MAXDIMS];			// Used in memory only. Write zero. Ignore on read.
 	uint32_t dimLabels[MAXDIMS];			// Used in memory only. Write zero. Ignore on read.
@@ -90,4 +96,4 @@ struct WaveHeader5 {
 
 	float wData[1];						// The start of the array of data. Must be 64 bit aligned.
 };
-#pragma pack()
+

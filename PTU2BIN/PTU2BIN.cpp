@@ -44,7 +44,7 @@ bool my_isatty()
 
 int ExportIBWFile(std::ostream& os, uint32_t* histogram, int64_t pix_x,
 	int64_t pix_y, double res_space, double res_time, int64_t num_hist_channels,
-	int64_t max_export_channel, const std::string& wavename);
+	int64_t max_export_channel, const std::string& wavename, time_t filedate);
 
 const double epochdiff = 25569.0; // days between 30/12/1899 (OLE epoch) and 01/01/1970 (UNIX epoch)
 // convert OLE time, a.k.a. MS time to C time_t
@@ -195,6 +195,7 @@ int main(int argc, char** argv)
 	double Resolution = 0.0, // resolution for Dtime
 		GlobRes = 0.0, // resolution for global timer
 		PixResol = 0.0;
+	time_t filedate = 0;
 	TagHead tghd;
 	unsigned int tagcount = 0;
 	////////////
@@ -240,12 +241,12 @@ int main(int argc, char** argv)
 			break;
 		case tyTDateTime:
 			if (strcmp(tghd.Ident, FileCreatingTime) == 0) {
-				time_t t = OLEtime2time_t(*((double*) & (tghd.TagValue)));
+				filedate = OLEtime2time_t(*((double*) & (tghd.TagValue)));
 				tm time;
 #ifdef _WIN32
-				gmtime_s(&time, &t);
+				gmtime_s(&time, &filedate);
 #elif __linux__
-				gmtime_r(&t, &time);
+				gmtime_r(&filedate, &time);
 #endif
 				char buf[26];
 				std::strftime(buf, sizeof(buf), "%c", &time);
@@ -440,7 +441,8 @@ int main(int argc, char** argv)
 	outfile.close();
 	outfile.open("test1.ibw", std::ios::out | std::ios::binary);
 	std::cout << "experimentally write igor binary file" << std::endl;
-	ExportIBWFile(outfile, histogram, pix_x, pix_y, PixResol, Resolution, MAX_CHANNELS, maxDtime, std::string("test1"));
+	ExportIBWFile(outfile, histogram, pix_x, pix_y, PixResol, Resolution, MAX_CHANNELS,
+		maxDtime, std::string("test1"), filedate);
 	delete[] histogram;
 	outfile.close();
 	std::cout << "Done." << std::endl;
