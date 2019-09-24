@@ -10,6 +10,7 @@
 
 #include <iostream>
 #include <fstream>
+#include <string>
 #include <vector>
 #include <algorithm>
 #include <cstdint>
@@ -40,6 +41,10 @@ bool my_isatty()
 #endif // DOPERFORMANCEANALYSIS
 
 #pragma pack(8)
+
+int ExportIBWFile(std::ostream& os, uint32_t* histogram, int64_t pix_x,
+	int64_t pix_y, double res_space, double res_time, int64_t num_hist_channels,
+	int64_t max_export_channel, const std::string& wavename);
 
 const double epochdiff = 25569.0; // days between 30/12/1899 (OLE epoch) and 01/01/1970 (UNIX epoch)
 // convert OLE time, a.k.a. MS time to C time_t
@@ -115,6 +120,37 @@ struct TagHead {
 	int64_t TagValue; // Value of tag.
 };
 
+struct BinHeader {
+	uint32_t PixX, PixY;
+	float PixResol;
+	uint32_t TCSPCChannels;
+	float TimeResol;
+};
+
+// write histogram data in BIN format
+int ExportBinFile(std::ostream& os, uint32_t* histogram, int64_t pix_x, int64_t pix_y, double res_space, double res_time, int64_t num_hist_channels, int64_t max_used_channel)
+{
+	BinHeader bh;
+	bh.PixX = (uint32_t)pix_x;
+	bh.PixY = (uint32_t)pix_y;
+	bh.PixResol = (float)res_space;
+	bh.TCSPCChannels = (uint32_t)max_used_channel;
+	bh.TimeResol = (float)(res_time * 1e9); // in ns
+	os.write((char*)& bh, sizeof(bh));
+	if (!os.good()) {
+		return 1;
+	}
+	for (int64_t y = 0; y < pix_y; ++y) {
+		for (int64_t x = 0; x < pix_x; ++x) {
+			os.write((char*)(histogram + y * pix_x * num_hist_channels + x * num_hist_channels), sizeof(uint32_t) * max_used_channel);
+			if (!os.good()) {
+				return 1;
+			}
+		}
+	}
+	return 0; // success
+}
+
 int main(int argc, char** argv)
 {
 	// check if we are running from a terminal
@@ -128,8 +164,9 @@ int main(int argc, char** argv)
 		std::cerr << "Usage: " << argv[0] << " <infile> <outfile> [<channel no.>]" << std::endl;
 		return 1;
 	}
-	std::cout << "infile: " << argv[1] << "\noutfile: " << argv[2] << std::endl;
-	std::ifstream infile(argv[1], std::ios::in | std::ios::binary);
+	std::string infilename(argv[1]), outfilename(argv[2]);
+	std::cout << "infile: " << infilename << "\noutfile: " << outfilename << std::endl;
+	std::ifstream infile(infilename.c_str(), std::ios::in | std::ios::binary);
 	if (!infile.good()) {
 		std::cerr << "error opening infile" << std::endl;
 		return 1;
@@ -199,7 +236,7 @@ int main(int argc, char** argv)
 				std::cout << "Sync intervall " << GlobRes << " s" << std::endl;
 			}
 			if (strcmp(tghd.Ident, ImgHdrPixResol) == 0)
-				PixResol = *(double*) & (tghd.TagValue);
+				PixResol = *(double*) & (tghd.TagValue); // in micrometer
 			break;
 		case tyTDateTime:
 			if (strcmp(tghd.Ident, FileCreatingTime) == 0) {
@@ -388,36 +425,23 @@ int main(int argc, char** argv)
 	double microsec_lastpixeltime = double(lastlinestop - lastlinestart) * GlobRes * 1.0e6 / double(pix_x);
 	// round dwell time to nearest 0.1 micros:
 	std::cout << "pixel dwell time " << std::round(microsec_lastpixeltime*10.0)/10.0 << " microseconds" << std::endl;
+	++maxDtime; // need to store one datapoint more than max Dtime
 	std::cout << "\nWriting outfile." << std::endl;
-	std::ofstream outfile(argv[2], std::ios::out | std::ios::binary);
+	std::ofstream outfile(outfilename.c_str(), std::ios::out | std::ios::binary);
 	if (!outfile.good()) {
 		std::cerr << " error opening outfile\n";
 		return 1;
 	}
-	struct BinHeader {
-		uint32_t PixX, PixY;
-		float PixResol;
-		uint32_t TCSPCChannels;
-		float TimeResol;
-	} bh;
-	++maxDtime; // need to store one datapoint more than max Dtime
-	bh.PixX = (uint32_t)pix_x;
-	bh.PixY = (uint32_t)pix_y;
-	bh.PixResol = (float)PixResol;
-	bh.TCSPCChannels = maxDtime;
-	bh.TimeResol = (float)(Resolution * 1e9); // in ns
-	outfile.write((char*)& bh, sizeof(bh));
-	for (int64_t y = 0; y < pix_y; ++y) {
-		for (int64_t x = 0; x < pix_x; ++x) {
-			outfile.write((char*)(histogram + y * pix_x * MAX_CHANNELS + x * MAX_CHANNELS), sizeof(uint32_t) * maxDtime);
-		}
-	}
-	delete[] histogram;
-	if (!outfile.good()) {
+	if (ExportBinFile(outfile, histogram, pix_x, pix_y, PixResol, Resolution, MAX_CHANNELS, maxDtime) != 0) {
 		std::cerr << "Error while writing outfile.\n";
 		outfile.close();
 		return 1;
 	}
+	outfile.close();
+	outfile.open("test1.ibw", std::ios::out | std::ios::binary);
+	std::cout << "experimentally write igor binary file" << std::endl;
+	ExportIBWFile(outfile, histogram, pix_x, pix_y, PixResol, Resolution, MAX_CHANNELS, maxDtime, std::string("test1"));
+	delete[] histogram;
 	outfile.close();
 	std::cout << "Done." << std::endl;
 	return 0;

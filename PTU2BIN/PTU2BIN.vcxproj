@@ -152,6 +152,10 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="PTU2BIN.cpp" />
+    <ClCompile Include="export_igor_ibw.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="export_igor_ibw.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

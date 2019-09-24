@@ -18,5 +18,13 @@
     <ClCompile Include="PTU2BIN.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="export_igor_ibw.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="export_igor_ibw.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -343,3 +343,4 @@ healthchecksdb
 /convertPTUs/test1.txt
 /convertPTUs/test2.ptu
 *.diagsession
+*.ibw

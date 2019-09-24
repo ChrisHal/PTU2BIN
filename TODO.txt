@@ -14,3 +14,7 @@ Some more info in output would be nice:
 2. date/time of recording (I hate date/time handling...) - done (testing needed?)
 3. max. countrate per pixel (i.e. for the brightest pixel)
 (can be calculated from from counts and number of frames and dwelltime?)
+
+2019-09-24
+Add export to Igor Pro binary wave file. Decide on file-extension of
+outfilename parameter which format to use for export.
