@@ -24,8 +24,8 @@ most systems. Instructions for Windows and Linux are privided:
 On Windows: The preffered solution is to use VisualStudio and build using
   the VisualStudio solution file "PTU2BIN.sln".
 On Linux: You will need a C++ compiler installed. We assume that the GNU compiler
-  is used. Then "g++ -o PTU2BIN PTU2BIN.cpp" should be sufficient to build the
-  executable.
+  is used. Then "g++ -O2 -o  PTU2BIN PTU2BIN.cpp export_igor_ibw.cpp" should be
+  sufficient to build the executable.
 
 INSTALLING
 Make sure that Python3.5 (or higher) is installed on your system.
@@ -38,5 +38,17 @@ Linux: Copy the executable PTU2BIN to a directory in your PATH,
 USAGE
 Windows: Double-click "convertPTUs.py" -> all PTU files that are found in
   sub-directories will be converted.
+
 Linux: In terminal, change to the directory where convertPTUs.py is located.
   Start the conversion using the command "python convertPTUs.py"
+
+All OSs:
+  To convert a single file:
+
+  PTU2BIN <infile> <outfile> [<channel #>]
+
+  <infile> must be in PTU format.   If <outfile> has extension ".ibw" a Igor
+  binary file is written, otherwise a BIN file. For historical reasons,
+  by default channel # 2 in the PTU file is evaluated. This can be overwritten
+  by giving the number of the desired channel as the 3rd agument.
+  Numbers <=0 indicate that all channels should be used.
