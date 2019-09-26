@@ -463,7 +463,11 @@ int main(int argc, char** argv)
 		else {
 			wavename = outfilename.substr(0, poslastdot);
 		}
-		std::cout << "wavename " << wavename << std::endl;
+		char firstchar = wavename.at(0);
+		if (!std::isalpha(firstchar) && firstchar!='_') {
+			wavename = "_" + wavename;
+			std::cout << "wavename amended -> " << wavename << std::endl;
+		}
 		res = ExportIBWFile(outfile, histogram, pix_x, pix_y, PixResol, Resolution, MAX_CHANNELS,
 			maxDtime, wavename, filedate);
 	}
