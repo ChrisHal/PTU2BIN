@@ -19,6 +19,7 @@
 #include <cmath>
 #define __STDC_WANT_LIB_EXT1__
 #include <ctime>
+#include <cxxopts.hpp>
 #ifdef __linux__
 #include <unistd.h>
 bool my_isatty()
@@ -45,6 +46,8 @@ bool my_isatty()
 extern int ExportIBWFile(std::ostream& os, uint32_t* histogram, int64_t pix_x,
 	int64_t pix_y, double res_space, double res_time, int64_t num_hist_channels,
 	int64_t max_export_channel, const std::string& wavename, time_t filedate);
+
+constexpr auto VERSION = "pre-2";
 
 const double epochdiff = 25569.0; // days between 30/12/1899 (OLE epoch) and 01/01/1970 (UNIX epoch)
 // convert OLE time, a.k.a. MS time to C time_t
@@ -151,20 +154,59 @@ int ExportBinFile(std::ostream& os, uint32_t* histogram, int64_t pix_x, int64_t 
 	return 0; // success
 }
 
+cxxopts::ParseResult parse(int argc, char** argv, std::string& infile, std::string& outfile, int& channelofinterest)
+{
+	try {
+		cxxopts::Options options(argv[0], " - convert PTU to BIN or IBW");
+		options.positional_help("<infile> <outfile> [<channel#>]").show_positional_help();
+		options.add_options()
+			("i,infile", "input file", cxxopts::value<std::string>(),"<infile>")
+			("o,outfile", "output file", cxxopts::value<std::string>(),"<outfile>")
+			("c,channel","detectorchannel (<=0: all, default: 2)",cxxopts::value<int>(),"<channel#>")
+			/*("positional",
+				"Positional arguments: these are the arguments that are entered "
+				"without an option", cxxopts::value<std::vector<std::string>>())*/
+				("h,help", "Print help");
+
+		options.parse_positional({ "infile", "outfile", "channel"});
+
+		auto result = options.parse(argc, argv);
+		if (result.count("help"))
+		{
+			std::cout << options.help() << std::endl;
+			exit(0);
+		}
+		if (!result.count("infile") || !result.count("outfile")) {
+			std::cerr << "input and/or output file not specified" << std::endl;
+			exit(-1);
+		}
+		infile = result["infile"].as<std::string>();
+		outfile = result["outfile"].as<std::string>();
+		if (result.count("channel")) {
+			channelofinterest = result["channel"].as<int>()-1;
+		}
+		if (argc > 1) {
+			std::cerr << "Warning: more arguments given than expected. " << std::endl;
+		}
+		return result;
+	}
+	catch (const cxxopts::OptionException & e) {
+		std::cout << "error parsing options: " << e.what() << std::endl;
+		exit(-1);
+	}
+}
+
 int main(int argc, char** argv)
 {
+	std::string infilename, outfilename;
+	int channelofinterest = 1;
+	auto parsedargs = parse(argc, argv, infilename, outfilename, channelofinterest);
 	// check if we are running from a terminal
 #ifdef DOPERFORMANCEANALYSIS
 	bool isterminal = false;
 #else // DOPERFORMANCEANALYSIS
 	bool isterminal = my_isatty();
 #endif
-
-	if ((argc < 3) || (argc > 4)) {
-		std::cerr << "Usage: " << argv[0] << " <infile> <outfile> [<channel no.>]" << std::endl;
-		return 1;
-	}
-	std::string infilename(argv[1]), outfilename(argv[2]);
 	std::cout << "infile: " << infilename << "\noutfile: " << outfilename << std::endl;
 	std::ifstream infile(infilename.c_str(), std::ios::in | std::ios::binary);
 	if (!infile.good()) {
@@ -188,8 +230,8 @@ int main(int argc, char** argv)
 		return 1;
 	}
 	std::cout << "File version: " << Version << std::endl;
-	int channelofinterest = 1;
-	if (argc == 4) channelofinterest = atoi(argv[3]) - 1;
+
+	//if (argc == 4) channelofinterest = atoi(argv[3]) - 1;
 	int64_t num_records = 0, record_type = 0, pix_x = 0, pix_y = 0, trg_frame = 0, trg_linestart = 0, trg_linestop = 0;
 	const unsigned int MAX_CHANNELS = 512; // number of histogramm channels, same as max Dtime?
 	double Resolution = 0.0, // resolution for Dtime

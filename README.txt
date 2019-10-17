@@ -18,6 +18,10 @@ convertPTUs.py - A Python script that batch-converts all ptu files in the curren
   is a command-line switch to send the output of PTU2BIN to the terminal instead.
 
 BUILDING
+Dependancies:
+cxxopts.hpp (available at https://github.com/jarro2783/cxxopts.git)
+This must be in your include path
+
 Only the PTU2BIN executable needs to be build. The python script cna be used "as is".
 Since in normal configuration only standard C++ is used building should work on
 most systems. Instructions for Windows and Linux are privided:
