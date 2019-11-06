@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <limits>
 #include <cstdint>
 #include <cstring>
 #include <cstdio>
@@ -154,7 +155,8 @@ int ExportBinFile(std::ostream& os, uint32_t* histogram, int64_t pix_x, int64_t 
 	return 0; // success
 }
 
-cxxopts::ParseResult parse(int argc, char** argv, std::string& infile, std::string& outfile, int& channelofinterest)
+cxxopts::ParseResult parse(int argc, char** argv, std::string& infile, std::string& outfile, int& channelofinterest,
+	int64_t& first_frame, int64_t& last_frame)
 {
 	try {
 		cxxopts::Options options(argv[0], " - convert PTU to BIN or IBW");
@@ -163,6 +165,8 @@ cxxopts::ParseResult parse(int argc, char** argv, std::string& infile, std::stri
 			("i,infile", "input file", cxxopts::value<std::string>(),"<infile>")
 			("o,outfile", "output file", cxxopts::value<std::string>(),"<outfile>")
 			("c,channel","detectorchannel (<=0: all, default: 2)",cxxopts::value<int>(),"<channel#>")
+			("f,first", "first frame (default 0)", cxxopts::value<int64_t>(),"<# 1st frame>")
+			("l,last", "last frame (default: last in file)", cxxopts::value<int64_t>(), "<# last frame>")
 			/*("positional",
 				"Positional arguments: these are the arguments that are entered "
 				"without an option", cxxopts::value<std::vector<std::string>>())*/
@@ -185,6 +189,12 @@ cxxopts::ParseResult parse(int argc, char** argv, std::string& infile, std::stri
 		if (result.count("channel")) {
 			channelofinterest = result["channel"].as<int>()-1;
 		}
+		if (result.count("first")) {
+			first_frame = result["first"].as<int64_t>();
+		}
+		if (result.count("last")) {
+			last_frame = result["last"].as<int64_t>();
+		}
 		if (argc > 1) {
 			std::cerr << "Warning: more arguments given than expected. " << std::endl;
 		}
@@ -200,7 +210,8 @@ int main(int argc, char** argv)
 {
 	std::string infilename, outfilename;
 	int channelofinterest = 1;
-	auto parsedargs = parse(argc, argv, infilename, outfilename, channelofinterest);
+	int64_t first_frame = 0, last_frame = std::numeric_limits<int64_t>::max();
+	auto parsedargs = parse(argc, argv, infilename, outfilename, channelofinterest, first_frame, last_frame);
 	// check if we are running from a terminal
 #ifdef DOPERFORMANCEANALYSIS
 	bool isterminal = false;
@@ -333,7 +344,7 @@ int main(int argc, char** argv)
 	const int64_t T3WRAPAROUND = 1024;
 	int64_t oflcorrection = 0, lastlinestart = -1, lastlinestop = -1, lineduration = -1, linecounter = -LINES_TO_SKIP /*skip lines*/,
 		totallines = 0,
-		framecounter = 0, lastframetime = -1, truensync = 0;
+		framecounter = 0, lastframetime = -1, truensync = 0, linesprocessed = 0;
 	unsigned int TrgLineStartMask = 1 << (trg_linestart - 1), TrgLineStopMask = 1 << (trg_linestop - 1),
 		TrgFrameMask = 1 << (trg_frame - 1);
 	bool isrecordingline = false, framehasstarted = false;
@@ -413,7 +424,8 @@ int main(int argc, char** argv)
 					lastlinestop = truensync;
 					lineduration = lastlinestop - lastlinestart;
 					// process line data:
-					if ((linecounter >= 0) && (linecounter < pix_y)) {
+					if ((framecounter>=first_frame) && (framecounter<=last_frame) && (linecounter >= 0) && (linecounter < pix_y)) {
+						++linesprocessed;
 						uint32_t* lp = histogram + linecounter * MAX_CHANNELS * pix_x;
 						for (auto pt : pixeltimes) {
 							int64_t x = std::max(int64_t(0), std::min(((int64_t(pt.pixeltime) * pix_x) / lineduration), pix_x - 1));
@@ -444,7 +456,8 @@ int main(int argc, char** argv)
 		}
 		else // photon detected
 		{
-			if (isrecordingline && (linecounter >= 0) && ((channelofinterest < 0) || (channel == channelofinterest))) {
+			if (isrecordingline && (framecounter >= first_frame) && (framecounter <= last_frame) && 
+					(linecounter >= 0) && ((channelofinterest < 0) || (channel == channelofinterest))) {
 				truensync = oflcorrection + nsync;
 				int64_t pixeltime = truensync - lastlinestart;
 				// store for later use:
@@ -463,7 +476,10 @@ int main(int argc, char** argv)
 #endif
 	infile.close();
 	delete[] buffer;
-	std::cout << " \ntotal frames " << framecounter << "\ntotal lines " << totallines << std::endl;
+	std::cout << "first processed frame " << first_frame
+		<< " \ntotal frames " << framecounter << " (processed: " << linesprocessed/pix_y
+		<< ")\ntotal lines " << totallines << " (processed: " << linesprocessed
+		<< ")" << std::endl;
 	std::cout << "max Dtime " << maxDtime << std::endl;
 	double microsec_lastpixeltime = double(lastlinestop - lastlinestart) * GlobRes * 1.0e6 / double(pix_x);
 	// round dwell time to nearest 0.1 micros:
