@@ -48,7 +48,7 @@ extern int ExportIBWFile(std::ostream& os, uint32_t* histogram, int64_t pix_x,
 	int64_t pix_y, double res_space, double res_time, int64_t num_hist_channels,
 	int64_t max_export_channel, const std::string& wavename, time_t filedate);
 
-constexpr auto VERSION = "pre-2";
+constexpr auto APP_NAME = "PTU2BIN", VERSION = "pre-2";
 
 const double epochdiff = 25569.0; // days between 30/12/1899 (OLE epoch) and 01/01/1970 (UNIX epoch)
 // convert OLE time, a.k.a. MS time to C time_t
@@ -167,6 +167,7 @@ cxxopts::ParseResult parse(int argc, char** argv, std::string& infile, std::stri
 			("c,channel","detectorchannel (<=0: all, default: 2)",cxxopts::value<int>(),"<channel#>")
 			("f,first", "first frame (default 0)", cxxopts::value<int64_t>(),"<# 1st frame>")
 			("l,last", "last frame (default: last in file)", cxxopts::value<int64_t>(), "<# last frame>")
+			("v,version", "Print version")
 			/*("positional",
 				"Positional arguments: these are the arguments that are entered "
 				"without an option", cxxopts::value<std::vector<std::string>>())*/
@@ -178,6 +179,11 @@ cxxopts::ParseResult parse(int argc, char** argv, std::string& infile, std::stri
 		if (result.count("help"))
 		{
 			std::cout << options.help() << std::endl;
+			exit(0);
+		}
+		if (result.count("version"))
+		{
+			std::cout << APP_NAME << " Version " << VERSION << std::endl;
 			exit(0);
 		}
 		if (!result.count("infile") || !result.count("outfile")) {
