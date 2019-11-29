@@ -56,3 +56,5 @@ All OSs:
   by default channel # 2 in the PTU file is evaluated. This can be overwritten
   by giving the number of the desired channel as the 3rd agument.
   Numbers <=0 indicate that all channels should be used.
+  To learn about additional options:
+  PTU2BIN --help

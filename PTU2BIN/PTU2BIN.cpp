@@ -351,6 +351,7 @@ int main(int argc, char** argv)
 	int64_t oflcorrection = 0, lastlinestart = -1, lastlinestop = -1, lineduration = -1, linecounter = -LINES_TO_SKIP /*skip lines*/,
 		totallines = 0,
 		framecounter = 0, lastframetime = -1, truensync = 0, linesprocessed = 0;
+	int64_t frametrgcount = 0; // as a control we count the frame triggers
 	unsigned int TrgLineStartMask = 1 << (trg_linestart - 1), TrgLineStopMask = 1 << (trg_linestop - 1),
 		TrgFrameMask = 1 << (trg_frame - 1);
 	bool isrecordingline = false, framehasstarted = false;
@@ -457,6 +458,7 @@ int main(int argc, char** argv)
 				if (trigger & TrgFrameMask) { // we kind of ignore it, since it seems to be unreliable
 					framehasstarted = true;
 					lastframetime = truensync;
+					++frametrgcount;
 				}
 			}
 		}
@@ -486,6 +488,12 @@ int main(int argc, char** argv)
 		<< " \ntotal frames " << framecounter << " (processed: " << linesprocessed/pix_y
 		<< ")\ntotal lines " << totallines << " (processed: " << linesprocessed
 		<< ")" << std::endl;
+	if (frametrgcount != framecounter) {
+		std::cout << "WARNING: unexpected number of frame triggers in file (" << frametrgcount << ")" << std::endl;
+	}
+	if (totallines != ((pix_y + LINES_TO_SKIP) * framecounter)) {
+		std::cout << "WARNING: total lines in file do not match expected num. of lines" << std::endl;
+	}
 	std::cout << "max Dtime " << maxDtime << std::endl;
 	double microsec_lastpixeltime = double(lastlinestop - lastlinestart) * GlobRes * 1.0e6 / double(pix_x);
 	// round dwell time to nearest 0.1 micros:
