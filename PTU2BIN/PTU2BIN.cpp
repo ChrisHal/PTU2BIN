@@ -13,6 +13,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <numeric>
 #include <limits>
 #include <cstdint>
 #include <cstring>
@@ -350,8 +351,10 @@ int main(int argc, char** argv)
 	const int64_t T3WRAPAROUND = 1024;
 	int64_t oflcorrection = 0, lastlinestart = -1, lastlinestop = -1, lineduration = -1, linecounter = -LINES_TO_SKIP /*skip lines*/,
 		totallines = 0,
-		framecounter = 0, lastframetime = -1, truensync = 0, linesprocessed = 0;
+		framecounter = 0, truensync = 0, linesprocessed = 0;
 	int64_t frametrgcount = 0; // as a control we count the frame triggers
+	int64_t lastframetime = -1;  // time of last frame trg
+	std::vector<int64_t> frameintervals;
 	unsigned int TrgLineStartMask = 1 << (trg_linestart - 1), TrgLineStopMask = 1 << (trg_linestop - 1),
 		TrgFrameMask = 1 << (trg_frame - 1);
 	bool isrecordingline = false, framehasstarted = false;
@@ -457,6 +460,9 @@ int main(int argc, char** argv)
 				}
 				if (trigger & TrgFrameMask) { // we kind of ignore it, since it seems to be unreliable
 					framehasstarted = true;
+					if (lastframetime >= 0) {
+						frameintervals.push_back(truensync - lastframetime);
+					}
 					lastframetime = truensync;
 					++frametrgcount;
 				}
@@ -493,6 +499,12 @@ int main(int argc, char** argv)
 	}
 	if (totallines != ((pix_y + LINES_TO_SKIP) * framecounter)) {
 		std::cout << "WARNING: total lines in file do not match expected num. of lines" << std::endl;
+	}
+	if (frameintervals.size() > 0) {
+		// calculate average frame interval:
+		int64_t tmpsum = std::accumulate(frameintervals.begin(), frameintervals.end(), 0LL);
+		double avg_interval = double(tmpsum) / double(frameintervals.size()) * GlobRes;
+		std::cout << "average frame interval " << avg_interval << " s" << std::endl;
 	}
 	std::cout << "max Dtime " << maxDtime << std::endl;
 	double microsec_lastpixeltime = double(lastlinestop - lastlinestart) * GlobRes * 1.0e6 / double(pix_x);
