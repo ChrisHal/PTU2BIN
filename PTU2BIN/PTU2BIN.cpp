@@ -212,6 +212,14 @@ cxxopts::ParseResult parse(int argc, char** argv, std::string& infile, std::stri
 	}
 }
 
+double Int64ToDouble(int64_t tagval)
+{
+	static_assert(sizeof(double) == 8, "double ist not 8 bytes");
+	double t;
+	std::memcpy(&t, &tagval, 8);
+	return t;
+}
+
 int main(int argc, char** argv)
 {
 	std::string infilename, outfilename;
@@ -288,19 +296,19 @@ int main(int argc, char** argv)
 			break;
 		case tyFloat8:
 			if (strcmp(tghd.Ident, TTTRTagRes) == 0) { // Resolution for TCSPC-Decay
-				Resolution = *(double*) & (tghd.TagValue);
+				Resolution = Int64ToDouble(tghd.TagValue);
 				std::cout << "resol. for decay " << Resolution << " s" << std::endl;
 			}
 			if (strcmp(tghd.Ident, TTTRTagGlobRes) == 0) {// Global resolution for timetag
-				GlobRes = *(double*) & (tghd.TagValue); // in ns
+				GlobRes = Int64ToDouble(tghd.TagValue); // in ns
 				std::cout << "Sync intervall " << GlobRes << " s" << std::endl;
 			}
 			if (strcmp(tghd.Ident, ImgHdrPixResol) == 0)
-				PixResol = *(double*) & (tghd.TagValue); // in micrometer
+				PixResol = Int64ToDouble(tghd.TagValue); // in micrometer
 			break;
 		case tyTDateTime:
 			if (strcmp(tghd.Ident, FileCreatingTime) == 0) {
-				filedate = OLEtime2time_t(*((double*) & (tghd.TagValue)));
+				filedate = OLEtime2time_t(Int64ToDouble(tghd.TagValue));
 				tm time;
 #ifdef _WIN32
 				gmtime_s(&time, &filedate);
