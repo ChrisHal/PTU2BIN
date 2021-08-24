@@ -1,16 +1,17 @@
-Copyright (c) 2019 Christian R. Halaszovich
+Copyright (c) 2021 Christian R. Halaszovich
 (See LICENSE.txt for licensing information.)
 
 Tools to convert PicoQuant PTU files (as written by e.g.
-PicoQuant's SymphoTime64) to BIN files containing pre-histogrammed data.
+PicoQuant's SymphoTime64) to BIN files or IgorPro binary wave files (IBW)
+containing pre-histogrammed data.
 This works for FLIM data in T3 format.
 The number of supported formats is quite limited as of now. Fell free to
-get in touch with me if you need addional formats supported. (PTU-files
+get in touch with me if you need additional formats supported. (PTU-files
 can differ somewhat in the internal format they use.)
 
 There are two tools provided:
-PTU2BIN - This is the conversion tool an can be used to convert single files.
-  (The original file is preserved, of course.) Addionally, some useful metadata is
+PTU2BIN - This is the conversion tool that can be used to convert single PTU files.
+  (The original file is preserved, of course.) Additionally, some useful metadata is
   extracted from the PTU file.
 convertPTUs.py - A Python script that batch-converts all ptu files in the current
   directory and its sub-directories and converts them using PTU2BIN.
@@ -18,14 +19,14 @@ convertPTUs.py - A Python script that batch-converts all ptu files in the curren
   is a command-line switch to send the output of PTU2BIN to the terminal instead.
 
 BUILDING
-Dependancies:
+Dependencies:
 cxxopts.hpp (available at https://github.com/jarro2783/cxxopts.git)
 This must be in your include path
 
-Only the PTU2BIN executable needs to be build. The python script cna be used "as is".
+Only the PTU2BIN executable needs to be build. The python script can be used "as is".
 Since in normal configuration only standard C++ is used building should work on
-most systems. Instructions for Windows and Linux are privided:
-On Windows: The preffered solution is to use VisualStudio and build using
+most systems. Instructions for Windows and Linux are provided:
+On Windows: The preferred solution is to use VisualStudio and build using
   the VisualStudio solution file "PTU2BIN.sln".
 On Linux: You will need a C++ compiler installed. We assume that the GNU compiler
   is used. Then "g++ -O2 -o  PTU2BIN PTU2BIN.cpp export_igor_ibw.cpp" should be
@@ -51,10 +52,12 @@ All OSs:
 
   PTU2BIN <infile> <outfile> [<channel #>]
 
-  <infile> must be in PTU format.   If <outfile> has extension ".ibw" a Igor
-  binary file is written, otherwise a BIN file. For historical reasons,
+  <infile> must be in PTU format.   If <outfile> has extension ".ibw" an Igor
+  binary file is written, otherwise a BIN file. The created file will contain
+  data from one channel or the sum of data from all channels. For historical reasons,
   by default channel # 2 in the PTU file is evaluated. This can be overwritten
-  by giving the number of the desired channel as the 3rd agument.
-  Numbers <=0 indicate that all channels should be used.
+  by giving the number of the desired channel as the 3rd argument.
+  Numbers <=0 indicate that all channels should be used, i.e. the photon counts of all
+  channels will be summed together.
   To learn about additional options:
   PTU2BIN --help
