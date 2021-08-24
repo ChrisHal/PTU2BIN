@@ -21,7 +21,9 @@ convertPTUs.py - A Python script that batch-converts all ptu files in the curren
 BUILDING
 Dependencies:
 cxxopts.hpp (available at https://github.com/jarro2783/cxxopts.git)
-This must be in your include path
+This must be in your include path.
+PTU2BIN was build using version 2.2.0 of cxxopts, newer versions might contain
+breaking chabnges.
 
 Only the PTU2BIN executable needs to be build. The python script can be used "as is".
 Since in normal configuration only standard C++ is used building should work on
