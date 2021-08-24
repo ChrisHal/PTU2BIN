@@ -12,7 +12,9 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <array>
 #include <algorithm>
+#include <iterator>
 #include <limits>
 #include <cstdint>
 #include <cstring>
@@ -62,7 +64,7 @@ time_t OLEtime2time_t(double oatime)
 // file is processed. Here we define how many. In our system is 1 line.
 // I do not know yet if this is universally true. Might be a bug in SymphoTime
 // or be specific to our system.
-const int	LINES_TO_SKIP = 1;
+constexpr int	LINES_TO_SKIP = 1;
 
 // some important Tag Idents (TTagHead.Ident)
 const char TTTRTagTTTRRecType[] = "TTResultFormat_TTTRRecType";
@@ -74,46 +76,43 @@ const char FileTagEnd[] = "Header_End";                // Always appended as las
 const char	ImgHdrPixX[] = "ImgHdr_PixX", ImgHdrPixY[] = "ImgHdr_PixY",
 			ImgHdrPixResol[] = "ImgHdr_PixResol", ImgHdrLineStart[] = "ImgHdr_LineStart",
 			ImgHdrLineStop[] = "ImgHdr_LineStop", ImgHdrFrame[] = "ImgHdr_Frame",
-			FileCreatingTime[] = "File_CreatingTime";
+			FileCreatingTime[] = "File_CreatingTime",
+			HWType[]="HW_Type";
 
 // TagTypes  (TTagHead.Typ)
-#define tyEmpty8      0xFFFF0008
-#define tyBool8       0x00000008
-#define tyInt8        0x10000008
-#define tyBitSet64    0x11000008
-#define tyColor8      0x12000008
-#define tyFloat8      0x20000008
-#define tyTDateTime   0x21000008
-#define tyFloat8Array 0x2001FFFF
-#define tyAnsiString  0x4001FFFF
-#define tyWideString  0x4002FFFF
-#define tyBinaryBlob  0xFFFFFFFF
+constexpr uint32_t
+	tyEmpty8 = 0xFFFF0008,
+	tyBool8 = 0x00000008,
+	tyInt8 = 0x10000008,
+	tyBitSet64 = 0x11000008,
+	tyColor8 = 0x12000008,
+	tyFloat8 = 0x20000008,
+	tyTDateTime = 0x21000008,
+	tyFloat8Array = 0x2001FFFF,
+	tyAnsiString = 0x4001FFFF,
+	tyWideString = 0x4002FFFF,
+	tyBinaryBlob = 0xFFFFFFFF;
 
 // RecordTypes
-#define rtPicoHarpT3     0x00010303    // (SubID = $00 ,RecFmt: $01) (V1), T-Mode: $03 (T3), HW: $03 (PicoHarp)
-#define rtPicoHarpT2     0x00010203    // (SubID = $00 ,RecFmt: $01) (V1), T-Mode: $02 (T2), HW: $03 (PicoHarp)
-#define rtHydraHarpT3    0x00010304    // (SubID = $00 ,RecFmt: $01) (V1), T-Mode: $03 (T3), HW: $04 (HydraHarp)
-#define rtHydraHarpT2    0x00010204    // (SubID = $00 ,RecFmt: $01) (V1), T-Mode: $02 (T2), HW: $04 (HydraHarp)
-#define rtHydraHarp2T3   0x01010304    // (SubID = $01 ,RecFmt: $01) (V2), T-Mode: $03 (T3), HW: $04 (HydraHarp)
-#define rtHydraHarp2T2   0x01010204    // (SubID = $01 ,RecFmt: $01) (V2), T-Mode: $02 (T2), HW: $04 (HydraHarp)
-#define rtTimeHarp260NT3 0x00010305    // (SubID = $00 ,RecFmt: $01) (V2), T-Mode: $03 (T3), HW: $05 (TimeHarp260N)
-#define rtTimeHarp260NT2 0x00010205    // (SubID = $00 ,RecFmt: $01) (V2), T-Mode: $02 (T2), HW: $05 (TimeHarp260N)
-#define rtTimeHarp260PT3 0x00010306    // (SubID = $00 ,RecFmt: $01) (V1), T-Mode: $02 (T3), HW: $06 (TimeHarp260P)
-#define rtTimeHarp260PT2 0x00010206    // (SubID = $00 ,RecFmt: $01) (V1), T-Mode: $02 (T2), HW: $06 (TimeHarp260P)
-#define rtMultiHarpNT3   0x00010307    // (SubID = $00 ,RecFmt: $01) (V1), T-Mode: $02 (T3), HW: $07 (MultiHarp150N)
-#define rtMultiHarpNT2   0x00010207    // (SubID = $00 ,RecFmt: $01) (V1), T-Mode: $02 (T2), HW: $07 (MultiHarp150N)
+constexpr int64_t
+rtPicoHarpT3 = 0x00010303,    // (SubID = $00 ,RecFmt: $01) (V1), T-Mode: $03 (T3), HW: $03 (PicoHarp)
+rtPicoHarpT2 = 0x00010203,    // (SubID = $00 ,RecFmt: $01) (V1), T-Mode: $02 (T2), HW: $03 (PicoHarp)
+rtHydraHarpT3 = 0x00010304,    // (SubID = $00 ,RecFmt: $01) (V1), T-Mode: $03 (T3), HW: $04 (HydraHarp)
+rtHydraHarpT2 = 0x00010204,    // (SubID = $00 ,RecFmt: $01) (V1), T-Mode: $02 (T2), HW: $04 (HydraHarp)
+rtHydraHarp2T3 = 0x01010304,    // (SubID = $01 ,RecFmt: $01) (V2), T-Mode: $03 (T3), HW: $04 (HydraHarp)
+rtHydraHarp2T2 = 0x01010204,    // (SubID = $01 ,RecFmt: $01) (V2), T-Mode: $02 (T2), HW: $04 (HydraHarp)
+rtTimeHarp260NT3 = 0x00010305,    // (SubID = $00 ,RecFmt: $01) (V2), T-Mode: $03 (T3), HW: $05 (TimeHarp260N)
+rtTimeHarp260NT2 = 0x00010205,    // (SubID = $00 ,RecFmt: $01) (V2), T-Mode: $02 (T2), HW: $05 (TimeHarp260N)
+rtTimeHarp260PT3 = 0x00010306,    // (SubID = $00 ,RecFmt: $01) (V1), T-Mode: $02 (T3), HW: $06 (TimeHarp260P)
+rtTimeHarp260PT2 = 0x00010206,    // (SubID = $00 ,RecFmt: $01) (V1), T-Mode: $02 (T2), HW: $06 (TimeHarp260P)
+rtMultiHarpNT3 = 0x00010307,    // (SubID = $00 ,RecFmt: $01) (V1), T-Mode: $02 (T3), HW: $07 (MultiHarp150N)
+rtMultiHarpNT2 = 0x00010207;    // (SubID = $00 ,RecFmt: $01) (V1), T-Mode: $02 (T2), HW: $07 (MultiHarp150N)
 
 // We should be able to work with HydraHarp, MultiHarp and TimeHarp260 T3 Format
 bool RecordTypeIsSupported(int64_t recordtype)
 {
-	const uint32_t supported_record_types[] = { 0x00010304, 0x01010304, 0x00010305, 0x000010306, 0x00010307 };
-	const unsigned num = sizeof(supported_record_types)/sizeof(uint32_t);
-	for (unsigned i = 0; i < num; ++i) {
-		if (supported_record_types[i] == recordtype) {
-			return true;
-		}
-	}
-	return false;
+	const auto supported_record_types = std::array{ rtHydraHarpT3, rtHydraHarp2T3, rtTimeHarp260NT3, rtTimeHarp260PT3, rtMultiHarpNT3 };
+	return std::find(supported_record_types.begin(), supported_record_types.end(), recordtype)!=supported_record_types.end();
 }
 
 // A Tag entry
@@ -263,7 +262,7 @@ int main(int argc, char** argv)
 		GlobRes = 0.0, // resolution for global timer
 		PixResol = 0.0;
 	time_t filedate = 0;
-	TagHead tghd;
+	TagHead tghd{};
 	unsigned int tagcount = 0;
 	////////////
 	// read tags:
@@ -300,7 +299,7 @@ int main(int argc, char** argv)
 				std::cout << "resol. for decay " << Resolution << " s" << std::endl;
 			}
 			if (strcmp(tghd.Ident, TTTRTagGlobRes) == 0) {// Global resolution for timetag
-				GlobRes = Int64ToDouble(tghd.TagValue); // in ns
+				GlobRes = Int64ToDouble(tghd.TagValue); // in s
 				std::cout << "Sync intervall " << GlobRes << " s" << std::endl;
 			}
 			if (strcmp(tghd.Ident, ImgHdrPixResol) == 0)
@@ -320,9 +319,18 @@ int main(int argc, char** argv)
 				std::cout << "File Creation Time: " << buf << std::endl;
 			}
 			break;
-		case tyFloat8Array:
 		case tyAnsiString:
+			if (strcmp(tghd.Ident, HWType) == 0) {
+				std::string hw_type(tghd.TagValue, '\0');
+				infile.read(hw_type.data(), tghd.TagValue);
+				std::cout << "HW type: " << hw_type << std::endl;
+			}
+			else {
+				infile.seekg(tghd.TagValue, std::ios::cur);
+			}
+			break;
 		case tyWideString:
+		case tyFloat8Array:
 		case tyBinaryBlob:
 			// need to skip a few bytes, not really interested in the data right now
 			infile.seekg(tghd.TagValue, std::ios::cur);
@@ -355,7 +363,7 @@ int main(int argc, char** argv)
 		std::cout << "Evaluating all channels." << std::endl;
 	}
 
-	const int64_t T3WRAPAROUND = 1024;
+	constexpr int64_t T3WRAPAROUND = 1024;
 	int64_t oflcorrection = 0, lastlinestart = -1, lastlinestop = -1, lineduration = -1, linecounter = -LINES_TO_SKIP /*skip lines*/,
 		totallines = 0,
 		framecounter = 0, lastframetime = -1, truensync = 0, linesprocessed = 0;
@@ -383,7 +391,7 @@ int main(int argc, char** argv)
 	QueryPerformanceCounter((LARGE_INTEGER*)& pcStart);
 #endif
 	// prepare input buffer
-	const size_t BUFFSIZE = 1024; // bigger buffer did not help on test machine
+	constexpr size_t BUFFSIZE = 1024; // bigger buffer did not help on test machine
 	auto buffer = new uint32_t[BUFFSIZE];
 	size_t bufidx = 0, bufnumelements = 0, recordsremaining = num_records;
 	//////////////
