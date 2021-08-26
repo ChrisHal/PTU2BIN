@@ -188,7 +188,7 @@ cxxopts::ParseResult parse(int argc, char** argv, std::string& infile, std::stri
 			exit(0);
 		}
 		if (!result.count("infile") || !result.count("outfile")) {
-			std::cerr << "input and/or output file not specified" << std::endl;
+			std::cerr << "input and/or output file not specified (use option -h for help)" << std::endl;
 			exit(-1);
 		}
 		infile = result["infile"].as<std::string>();
