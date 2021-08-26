@@ -21,12 +21,18 @@
     <ClCompile Include="export_igor_ibw.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="PTUFileHeader.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="export_igor_ibw.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="RecordBuffer.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="PTUFileHeader.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>

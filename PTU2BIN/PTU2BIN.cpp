@@ -25,7 +25,9 @@
 #define __STDC_WANT_LIB_EXT1__
 #include <ctime>
 #include <cxxopts.hpp>
+#include "PTUFileHeader.h"
 #include "RecordBuffer.h"
+
 #ifdef __linux__
 #include <unistd.h>
 bool my_isatty()
@@ -55,46 +57,12 @@ extern int ExportIBWFile(std::ostream& os, uint32_t* histogram, int64_t pix_x,
 
 constexpr auto APP_NAME = "PTU2BIN", VERSION = "pre-2";
 
-const double epochdiff = 25569.0; // days between 30/12/1899 (OLE epoch) and 01/01/1970 (UNIX epoch)
-// convert OLE time, a.k.a. MS time to C time_t
-time_t OLEtime2time_t(double oatime)
-{
-	time_t res((time_t)((oatime-epochdiff) * 24.0 * 60.0 * 60.0));
-	return res;
-}
-
 // It seems that a certain number of lines should be skipped when the PTU
 // file is processed. Here we define how many. In our system is 1 line.
 // I do not know yet if this is universally true. Might be a bug in SymphoTime
 // or be specific to our system.
 constexpr int	LINES_TO_SKIP = 1;
 
-// some important Tag Idents (TTagHead.Ident)
-const char TTTRTagTTTRRecType[] = "TTResultFormat_TTTRRecType";
-const char TTTRTagNumRecords[] = "TTResult_NumberOfRecords"; // Number of TTTR Records in the File;
-const char TTTRTagRes[] = "MeasDesc_Resolution";       // Resolution for the Dtime (T3 Only)
-const char TTSyncRate[] = "TTResult_SyncRate";	// snyc rate, usually repetiton rate of laser
-const char TTTRTagGlobRes[] = "MeasDesc_GlobalResolution"; // Global Resolution of TimeTag(T2) /NSync (T3). usually intervall between laserpulses
-const char FileTagEnd[] = "Header_End";                // Always appended as last tag (BLOCKEND)
-const char	ImgHdrPixX[] = "ImgHdr_PixX", ImgHdrPixY[] = "ImgHdr_PixY",
-			ImgHdrPixResol[] = "ImgHdr_PixResol", ImgHdrLineStart[] = "ImgHdr_LineStart",
-			ImgHdrLineStop[] = "ImgHdr_LineStop", ImgHdrFrame[] = "ImgHdr_Frame",
-			FileCreatingTime[] = "File_CreatingTime",
-			HWType[]="HW_Type";
-
-// TagTypes  (TTagHead.Typ)
-constexpr uint32_t
-	tyEmpty8 = 0xFFFF0008,
-	tyBool8 = 0x00000008,
-	tyInt8 = 0x10000008,
-	tyBitSet64 = 0x11000008,
-	tyColor8 = 0x12000008,
-	tyFloat8 = 0x20000008,
-	tyTDateTime = 0x21000008,
-	tyFloat8Array = 0x2001FFFF,
-	tyAnsiString = 0x4001FFFF,
-	tyWideString = 0x4002FFFF,
-	tyBinaryBlob = 0xFFFFFFFF;
 
 // RecordTypes
 constexpr int64_t
@@ -118,13 +86,6 @@ bool RecordTypeIsSupported(int64_t recordtype)
 	return std::find(supported_record_types.begin(), supported_record_types.end(), recordtype)!=supported_record_types.end();
 }
 
-// A Tag entry
-struct TagHead {
-	char Ident[32]; // Identifier of the tag
-	int32_t Idx;    // Index for multiple tags or -1
-	uint32_t Typ;   // Type of tag ty..... see const section
-	int64_t TagValue; // Value of tag.
-};
 
 struct BinHeader {
 	uint32_t PixX, PixY;
@@ -214,14 +175,6 @@ cxxopts::ParseResult parse(int argc, char** argv, std::string& infile, std::stri
 	}
 }
 
-double Int64ToDouble(int64_t tagval)
-{
-	static_assert(sizeof(double) == 8, "double ist not 8 bytes");
-	double t;
-	std::memcpy(&t, &tagval, 8);
-	return t;
-}
-
 int main(int argc, char** argv)
 {
 	std::string infilename, outfilename;
@@ -236,125 +189,28 @@ int main(int argc, char** argv)
 #endif
 	std::cout << "infile: " << infilename << "\noutfile: " << outfilename << std::endl;
 	std::ifstream infile(infilename.c_str(), std::ios::in | std::ios::binary);
-	if (!infile.good()) {
-		std::cerr << "error opening infile" << std::endl;
-		return 1;
-	}	// first, test if it is a valid file
-	char magic[8];
-	infile.read(magic, sizeof(magic));
-	if (!infile.good()) {
-		std::cerr << "error reading infile" << std::endl;
-		return 1;
+	PTUFileHeader fh;
+	if (!fh.ProcessFile(infile)) {
+		std::cerr << "error processing file headers" << std::endl;
+		exit(EXIT_FAILURE);
 	}
-	if (std::strncmp(magic, "PQTTTR", 6) != 0) {
-		std::cerr << "not a valid PTU file" << std::endl;
-		return 1;
-	}
-	std::string Version(8, ' ');
-	if (!infile.read(Version.data(), 8).good()) {
-		std::cerr << "error reading infile" << std::endl;
-		return 1;
-	}
-	std::cout << "File version: " << Version << std::endl;
 
-	int64_t num_records = 0, record_type = 0, pix_x = 0, pix_y = 0, trg_frame = 0, trg_linestart = 0, trg_linestop = 0;
-	double Resolution = 0.0, // resolution for Dtime
-		GlobRes = 0.0, // resolution for global timer
-		PixResol = 0.0;
-	time_t filedate = 0;
-	TagHead tghd{};
-	unsigned int tagcount = 0;
-	////////////
-	// read tags:
-	while (infile.read((char*)& tghd, sizeof(tghd)).good()) {
-		++tagcount;
-		switch (tghd.Typ)
-		{
-		case tyInt8:
-			if (strcmp(tghd.Ident, TTTRTagNumRecords) == 0) // Number of records
-				num_records = tghd.TagValue;
-			if (strcmp(tghd.Ident, TTTRTagTTTRRecType) == 0) // TTTR RecordType
-				record_type = tghd.TagValue;
-			if (strcmp(tghd.Ident, ImgHdrPixX) == 0) {
-				pix_x = tghd.TagValue;
-				std::cout << "pix. x " << pix_x << std::endl;
-			}
-			if (strcmp(tghd.Ident, ImgHdrPixY) == 0) {
-				pix_y = tghd.TagValue;
-				std::cout << "pix. y " << pix_y << std::endl;
-			}
-			if (strcmp(tghd.Ident, ImgHdrFrame) == 0)
-				trg_frame = tghd.TagValue;
-			if (strcmp(tghd.Ident, ImgHdrLineStart) == 0)
-				trg_linestart = tghd.TagValue;
-			if (strcmp(tghd.Ident, ImgHdrLineStop) == 0)
-				trg_linestop = tghd.TagValue;
-			if (strcmp(tghd.Ident, TTSyncRate) == 0) {
-				std::cout << "Sync rate " << tghd.TagValue << " Hz" << std::endl;
-			}
-			break;
-		case tyFloat8:
-			if (strcmp(tghd.Ident, TTTRTagRes) == 0) { // Resolution for TCSPC-Decay
-				Resolution = Int64ToDouble(tghd.TagValue);
-				std::cout << "resol. for decay " << Resolution << " s" << std::endl;
-			}
-			if (strcmp(tghd.Ident, TTTRTagGlobRes) == 0) {// Global resolution for timetag
-				GlobRes = Int64ToDouble(tghd.TagValue); // in s
-				std::cout << "Sync intervall " << GlobRes << " s" << std::endl;
-			}
-			if (strcmp(tghd.Ident, ImgHdrPixResol) == 0)
-				PixResol = Int64ToDouble(tghd.TagValue); // in micrometer
-			break;
-		case tyTDateTime:
-			if (strcmp(tghd.Ident, FileCreatingTime) == 0) {
-				filedate = OLEtime2time_t(Int64ToDouble(tghd.TagValue));
-				tm time;
-#ifdef _WIN32
-				gmtime_s(&time, &filedate);
-#elif __linux__
-				gmtime_r(&filedate, &time);
-#endif
-				char buf[26];
-				std::strftime(buf, sizeof(buf), "%c", &time);
-				std::cout << "File Creation Time: " << buf << std::endl;
-			}
-			break;
-		case tyAnsiString:
-			if (strcmp(tghd.Ident, HWType) == 0) {
-				std::string hw_type(tghd.TagValue, '\0');
-				infile.read(hw_type.data(), tghd.TagValue);
-				std::cout << "HW type: " << hw_type << std::endl;
-			}
-			else {
-				infile.seekg(tghd.TagValue, std::ios::cur);
-			}
-			break;
-		case tyWideString:
-		case tyFloat8Array:
-		case tyBinaryBlob:
-			// need to skip a few bytes, not really interested in the data right now
-			infile.seekg(tghd.TagValue, std::ios::cur);
-			break;
-		default:
-			break;
-		}
-		if (strncmp(tghd.Ident, FileTagEnd, sizeof(FileTagEnd)) == 0) {
-			break; // all headers have been read
-		}
-	}
-	/// done reading tags
+	
 	// TODO check if we got all info we need
 	if (!infile.good()) {
 		std::cerr << "error while reading file headers\n";
-		return 1;
+		exit(EXIT_FAILURE);
 	}
-	std::cout << tagcount << " tags read" << std::endl;
-	if (!RecordTypeIsSupported(record_type)) {
+	if (!fh.allNeededPresent()) {
+		std::cerr << "ERROR: some data missing from PTU file header" << std::endl;
+		exit(EXIT_FAILURE);
+	}
+	if (!RecordTypeIsSupported(fh.record_type)) {
 		std::cerr << "Unexpected record type, was expecting TimeHarp260P (or compatible) T3 data." << std::endl;
 		return 1;
 	}
-	std::cout << "estimated number of useful histogram channels " << GlobRes / Resolution << std::endl;
-	std::cout << "total # records in file: " << num_records << std::endl;
+	std::cout << "estimated number of useful histogram channels " << fh.GlobRes / fh.Resolution << std::endl;
+	std::cout << "total # records in file: " << fh.num_records << std::endl;
 	if (channelofinterest >= 0) {
 		std::cout << "Evaluating channel " << (channelofinterest + 1) << " only." << std::endl;
 	}
@@ -368,8 +224,8 @@ int main(int argc, char** argv)
 		totallines = 0,
 		framecounter = 0, lastframetime = -1, truensync = 0, linesprocessed = 0;
 	int64_t frametrgcount = 0; // as a control we count the frame triggers
-	unsigned int TrgLineStartMask = 1 << (trg_linestart - 1), TrgLineStopMask = 1 << (trg_linestop - 1),
-		TrgFrameMask = 1 << (trg_frame - 1);
+	unsigned int TrgLineStartMask = 1 << (fh.trg_linestart - 1), TrgLineStopMask = 1 << (fh.trg_linestop - 1),
+		TrgFrameMask = 1 << (fh.trg_frame - 1);
 	bool isrecordingline = false, framehasstarted = false;
 
 	// place for temporary storage of line data
@@ -381,8 +237,8 @@ int main(int argc, char** argv)
 
 	// space for histogramm data
 	constexpr auto MAX_CHANNELS = 512; // number of histogramm channels, same as max Dtime?
-	uint32_t* histogram = new uint32_t[MAX_CHANNELS * pix_x * pix_y];
-	std::memset(histogram, 0, sizeof(uint32_t) * MAX_CHANNELS * pix_x * pix_y);
+	uint32_t* histogram = new uint32_t[MAX_CHANNELS * fh.pix_x * fh.pix_y];
+	std::memset(histogram, 0, sizeof(uint32_t) * MAX_CHANNELS * fh.pix_x * fh.pix_y);
 	uint32_t maxDtime = 0; // max val in histogram
 	uint32_t TTTRRecord = 0;
 
@@ -392,11 +248,11 @@ int main(int argc, char** argv)
 	QueryPerformanceCounter((LARGE_INTEGER*)& pcStart);
 #endif
 	// prepare input buffer
-	RecordBuffer buffer(infile, num_records);
+	RecordBuffer buffer(infile, fh.num_records);
 
 	//////////////
 	// start processing of records
-	for (int64_t recnum = 0; recnum < num_records; ++recnum) {
+	for (int64_t recnum = 0; recnum < fh.num_records; ++recnum) {
 		TTTRRecord = buffer.pop();
 		const uint32_t SpecialBitMask = 0x80000000,
 			nsyncmask = 1023,
@@ -435,11 +291,11 @@ int main(int argc, char** argv)
 					lastlinestop = truensync;
 					lineduration = lastlinestop - lastlinestart;
 					// process line data:
-					if ((framecounter>=first_frame) && (framecounter<=last_frame) && (linecounter >= 0) && (linecounter < pix_y)) {
+					if ((framecounter>=first_frame) && (framecounter<=last_frame) && (linecounter >= 0) && (linecounter < fh.pix_y)) {
 						++linesprocessed;
-						uint32_t* lp = histogram + linecounter * MAX_CHANNELS * pix_x;
+						uint32_t* lp = histogram + linecounter * MAX_CHANNELS * fh.pix_x;
 						for (auto pt : pixeltimes) {
-							int64_t x = std::max(int64_t(0), std::min(((int64_t(pt.pixeltime) * pix_x) / lineduration), pix_x - 1));
+							int64_t x = std::max(int64_t(0), std::min(((int64_t(pt.pixeltime) * fh.pix_x) / lineduration), fh.pix_x - 1));
 							unsigned int dt = pt.dtime;
 							if (dt < MAX_CHANNELS) {
 								++lp[x * MAX_CHANNELS + dt];
@@ -449,7 +305,7 @@ int main(int argc, char** argv)
 					}
 					pixeltimes.clear();
 					++linecounter;
-					if (linecounter == pix_y) {
+					if (linecounter == fh.pix_y) {
 						++framecounter;
 						framehasstarted = false;
 						if (isterminal) { // show progress indicator only in terminal sessions
@@ -488,17 +344,17 @@ int main(int argc, char** argv)
 #endif
 	infile.close();
 	std::cout << "first processed frame " << first_frame
-		<< " \ntotal frames " << framecounter << " (processed: " << linesprocessed/pix_y
+		<< " \ntotal frames " << framecounter << " (processed: " << linesprocessed/fh.pix_y
 		<< ")\ntotal lines " << totallines << " (processed: " << linesprocessed
 		<< ")" << std::endl;
 	if (frametrgcount != framecounter) {
 		std::cout << "WARNING: unexpected number of frame triggers in file (" << frametrgcount << ")" << std::endl;
 	}
-	if (totallines != ((pix_y + LINES_TO_SKIP) * framecounter)) {
+	if (totallines != ((fh.pix_y + LINES_TO_SKIP) * framecounter)) {
 		std::cout << "WARNING: total lines in file do not match expected num. of lines" << std::endl;
 	}
 	std::cout << "max Dtime " << maxDtime << std::endl;
-	double microsec_lastpixeltime = double(lastlinestop - lastlinestart) * GlobRes * 1.0e6 / double(pix_x);
+	double microsec_lastpixeltime = double(lastlinestop - lastlinestart) * fh.GlobRes * 1.0e6 / double(fh.pix_x);
 	// round dwell time to nearest 0.1 micros:
 	std::cout << "pixel dwell time " << std::round(microsec_lastpixeltime * 10.0) / 10.0 << " microseconds" << std::endl;
 	++maxDtime; // need to store one datapoint more than max Dtime
@@ -527,7 +383,7 @@ int main(int argc, char** argv)
 	}
 	int res = 0;
 	if (!exporting_ibw) {
-		res = ExportBinFile(outfile, histogram, pix_x, pix_y, PixResol, Resolution, MAX_CHANNELS, maxDtime);
+		res = ExportBinFile(outfile, histogram, fh.pix_x, fh.pix_y, fh.PixResol, fh.Resolution, MAX_CHANNELS, maxDtime);
 	}
 	else {
 		auto lastslash = outfilename.find_last_of("/\\");
@@ -543,8 +399,8 @@ int main(int argc, char** argv)
 			wavename = "_" + wavename;
 			std::cout << "wavename amended -> " << wavename << std::endl;
 		}
-		res = ExportIBWFile(outfile, histogram, pix_x, pix_y, PixResol, Resolution, MAX_CHANNELS,
-			maxDtime, wavename, filedate);
+		res = ExportIBWFile(outfile, histogram, fh.pix_x, fh.pix_y, fh.PixResol, fh.Resolution, MAX_CHANNELS,
+			maxDtime, wavename, fh.filedate);
 	}
 	if (res != 0) {
 		outfile.close();
