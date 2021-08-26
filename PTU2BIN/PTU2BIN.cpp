@@ -25,6 +25,7 @@
 #define __STDC_WANT_LIB_EXT1__
 #include <ctime>
 #include <cxxopts.hpp>
+#include "RecordBuffer.h"
 #ifdef __linux__
 #include <unistd.h>
 bool my_isatty()
@@ -393,25 +394,12 @@ int main(int argc, char** argv)
 	QueryPerformanceCounter((LARGE_INTEGER*)& pcStart);
 #endif
 	// prepare input buffer
-	constexpr size_t BUFFSIZE = 1024; // bigger buffer did not help on test machine
-	auto buffer = new uint32_t[BUFFSIZE];
-	size_t bufidx = 0, bufnumelements = 0, recordsremaining = num_records;
+	RecordBuffer buffer(infile, num_records);
+
 	//////////////
 	// start processing of records
 	for (int64_t recnum = 0; recnum < num_records; ++recnum) {
-		if (bufidx == bufnumelements) {
-			// buffer is empty
-			size_t numtoread = std::min(BUFFSIZE, recordsremaining);
-			infile.read((char*)buffer, sizeof(uint32_t) * numtoread);
-			recordsremaining -= numtoread;
-			bufnumelements = numtoread;
-			bufidx = 0;
-		}
-		if (!infile.good()) {
-			std::cerr << "Error while reading TTTR records from infile. Unexpected end of file." << std::endl;
-			return 1;
-		}
-		TTTRRecord = buffer[bufidx++];
+		TTTRRecord = buffer.pop();
 		const uint32_t SpecialBitMask = 0x80000000,
 			nsyncmask = 1023,
 			dtimemask = 32767 << 10,
@@ -501,7 +489,6 @@ int main(int argc, char** argv)
 		<< " s per record)" << std::endl;
 #endif
 	infile.close();
-	delete[] buffer;
 	std::cout << "first processed frame " << first_frame
 		<< " \ntotal frames " << framecounter << " (processed: " << linesprocessed/pix_y
 		<< ")\ntotal lines " << totallines << " (processed: " << linesprocessed

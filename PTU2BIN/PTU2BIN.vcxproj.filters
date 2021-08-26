@@ -26,5 +26,8 @@
     <ClInclude Include="export_igor_ibw.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
+    <ClInclude Include="RecordBuffer.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
