@@ -161,7 +161,7 @@ cxxopts::ParseResult parse(int argc, char** argv, std::string& infile, std::stri
 	int64_t& first_frame, int64_t& last_frame)
 {
 	try {
-		cxxopts::Options options(argv[0], " - convert PTU to BIN or IBW");
+		cxxopts::Options options(APP_NAME, " - convert PTU to BIN or IBW");
 		options.positional_help("<infile> <outfile> [<channel#>]").show_positional_help();
 		options.add_options()
 			("i,infile", "input file", cxxopts::value<std::string>(),"<infile>")
@@ -250,17 +250,14 @@ int main(int argc, char** argv)
 		std::cerr << "not a valid PTU file" << std::endl;
 		return 1;
 	}
-	char Version[9];
-	Version[8] = 0;
-	if (!infile.read(Version, 8).good()) {
+	std::string Version(8, ' ');
+	if (!infile.read(Version.data(), 8).good()) {
 		std::cerr << "error reading infile" << std::endl;
 		return 1;
 	}
 	std::cout << "File version: " << Version << std::endl;
 
-	//if (argc == 4) channelofinterest = atoi(argv[3]) - 1;
 	int64_t num_records = 0, record_type = 0, pix_x = 0, pix_y = 0, trg_frame = 0, trg_linestart = 0, trg_linestop = 0;
-	const unsigned int MAX_CHANNELS = 512; // number of histogramm channels, same as max Dtime?
 	double Resolution = 0.0, // resolution for Dtime
 		GlobRes = 0.0, // resolution for global timer
 		PixResol = 0.0;
@@ -383,6 +380,7 @@ int main(int argc, char** argv)
 	std::vector<PixelTime> pixeltimes;
 
 	// space for histogramm data
+	constexpr auto MAX_CHANNELS = 512; // number of histogramm channels, same as max Dtime?
 	uint32_t* histogram = new uint32_t[MAX_CHANNELS * pix_x * pix_y];
 	std::memset(histogram, 0, sizeof(uint32_t) * MAX_CHANNELS * pix_x * pix_y);
 	uint32_t maxDtime = 0; // max val in histogram
