@@ -194,9 +194,6 @@ int main(int argc, char** argv)
 		std::cerr << "error processing file headers" << std::endl;
 		exit(EXIT_FAILURE);
 	}
-
-	
-	// TODO check if we got all info we need
 	if (!infile.good()) {
 		std::cerr << "error while reading file headers\n";
 		exit(EXIT_FAILURE);
@@ -207,7 +204,7 @@ int main(int argc, char** argv)
 	}
 	if (!RecordTypeIsSupported(fh.record_type)) {
 		std::cerr << "Unexpected record type, was expecting TimeHarp260P (or compatible) T3 data." << std::endl;
-		return 1;
+		exit(EXIT_FAILURE);
 	}
 	std::cout << "estimated number of useful histogram channels " << fh.GlobRes / fh.Resolution << std::endl;
 	std::cout << "total # records in file: " << fh.num_records << std::endl;
@@ -379,7 +376,7 @@ int main(int argc, char** argv)
 	std::ofstream outfile(outfilename.c_str(), std::ios::out | std::ios::binary);
 	if (!outfile.good()) {
 		std::cerr << " error opening outfile\n";
-		return 1;
+		exit(EXIT_FAILURE);
 	}
 	int res = 0;
 	if (!exporting_ibw) {
@@ -405,12 +402,12 @@ int main(int argc, char** argv)
 	if (res != 0) {
 		outfile.close();
 		std::cerr << "Error while writing outfile.\n";
-		return 1;
+		exit(EXIT_FAILURE);
 	}
 	outfile.close();
 
 	delete[] histogram;
 	std::cout << "Done." << std::endl;
-	return 0;
+	exit(EXIT_SUCCESS);
 }
 
