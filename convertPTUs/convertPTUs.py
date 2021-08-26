@@ -1,7 +1,7 @@
 
 #####################
 #####################
-### (C) 2019 C. R. Halaszovich
+### (C) 2021 C. R. Halaszovich
 ### Tool to apply PTU2BIN to all PTU-files in current directory,
 ### including subdirectories
 

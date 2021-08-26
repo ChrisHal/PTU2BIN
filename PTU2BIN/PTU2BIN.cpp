@@ -3,7 +3,9 @@
 //
 // As of now, only one specific format is supported.
 //
-// (c) 2019 Christian R. Halaszovich
+// (c) 2021 Christian R. Halaszovich
+// (See LICENSE.txt for licensing information.)
+// 
 // Some parts are based on demo code from PicoQuant
 // (see their GitHub repo)
 //
