@@ -164,15 +164,15 @@ cxxopts::ParseResult parse(int argc, char** argv, std::string& infile, std::stri
 		options.positional_help("<infile> <outfile> [<channel#>]").show_positional_help();
 		options.add_options()
 			("i,infile", "input file", cxxopts::value<std::string>(),"<infile>")
-			("o,outfile", "output file", cxxopts::value<std::string>(),"<outfile>")
+			("o,outfile", "output file (use suffix '.ibw' for IBW format)", cxxopts::value<std::string>(),"<outfile>")
 			("c,channel","detectorchannel (<=0: all, default: 2)",cxxopts::value<int>(),"<channel#>")
 			("f,first", "first frame (default 0)", cxxopts::value<int64_t>(),"<# 1st frame>")
 			("l,last", "last frame (default: last in file)", cxxopts::value<int64_t>(), "<# last frame>")
-			("v,version", "Print version")
+			("v,version", "print version")
 			/*("positional",
 				"Positional arguments: these are the arguments that are entered "
 				"without an option", cxxopts::value<std::vector<std::string>>())*/
-				("h,help", "Print help");
+				("h,help", "print help");
 
 		options.parse_positional({ "infile", "outfile", "channel"});
 
