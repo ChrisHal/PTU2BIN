@@ -24,6 +24,9 @@
     <ClCompile Include="PTUFileHeader.cpp">
       <Filter>Quelldateien</Filter>
     </ClCompile>
+    <ClCompile Include="TTTRRecordProcessor.cpp">
+      <Filter>Quelldateien</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="export_igor_ibw.h">
@@ -33,6 +36,9 @@
       <Filter>Headerdateien</Filter>
     </ClInclude>
     <ClInclude Include="PTUFileHeader.h">
+      <Filter>Headerdateien</Filter>
+    </ClInclude>
+    <ClInclude Include="TTTRRecordProcessor.h">
       <Filter>Headerdateien</Filter>
     </ClInclude>
   </ItemGroup>

@@ -345,3 +345,4 @@ healthchecksdb
 *.diagsession
 *.ibw
 *.bin
+*.ptu

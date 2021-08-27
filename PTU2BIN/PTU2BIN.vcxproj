@@ -159,11 +159,13 @@
     <ClCompile Include="PTU2BIN.cpp" />
     <ClCompile Include="export_igor_ibw.cpp" />
     <ClCompile Include="PTUFileHeader.cpp" />
+    <ClCompile Include="TTTRRecordProcessor.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="export_igor_ibw.h" />
     <ClInclude Include="PTUFileHeader.h" />
     <ClInclude Include="RecordBuffer.h" />
+    <ClInclude Include="TTTRRecordProcessor.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

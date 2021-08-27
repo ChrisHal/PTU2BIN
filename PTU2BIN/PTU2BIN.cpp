@@ -26,6 +26,7 @@
 #include <ctime>
 #include <cxxopts.hpp>
 #include "PTUFileHeader.h"
+#include "TTTRRecordProcessor.h"
 #include "RecordBuffer.h"
 
 #ifdef __linux__
@@ -97,7 +98,7 @@ struct BinHeader {
 // write histogram data in BIN format
 int ExportBinFile(std::ostream& os, uint32_t* histogram, int64_t pix_x, int64_t pix_y, double res_space, double res_time, int64_t num_hist_channels, int64_t max_used_channel)
 {
-	BinHeader bh;
+	BinHeader bh{};
 	bh.PixX = (uint32_t)pix_x;
 	bh.PixY = (uint32_t)pix_y;
 	bh.PixResol = (float)res_space;
@@ -190,6 +191,8 @@ int main(int argc, char** argv)
 	std::cout << "infile: " << infilename << "\noutfile: " << outfilename << std::endl;
 	std::ifstream infile(infilename.c_str(), std::ios::in | std::ios::binary);
 	PTUFileHeader fh;
+	TTTRRecordProcessor processor;
+
 	if (!fh.ProcessFile(infile)) {
 		std::cerr << "error processing file headers" << std::endl;
 		exit(EXIT_FAILURE);
@@ -202,7 +205,7 @@ int main(int argc, char** argv)
 		std::cerr << "ERROR: some data missing from PTU file header" << std::endl;
 		exit(EXIT_FAILURE);
 	}
-	if (!RecordTypeIsSupported(fh.record_type)) {
+	if (!processor.init(fh)) {
 		std::cerr << "Unexpected record type, was expecting TimeHarp260P (or compatible) T3 data." << std::endl;
 		exit(EXIT_FAILURE);
 	}
@@ -216,10 +219,10 @@ int main(int argc, char** argv)
 		std::cout << "Evaluating all channels." << std::endl;
 	}
 
-	constexpr int64_t T3WRAPAROUND = 1024;
-	int64_t oflcorrection = 0, lastlinestart = -1, lastlinestop = -1, lineduration = -1, linecounter = -LINES_TO_SKIP /*skip lines*/,
+	//constexpr int64_t T3WRAPAROUND = 1024;
+	int64_t lastlinestart = -1, lastlinestop = -1, lineduration = -1, linecounter = -LINES_TO_SKIP /*skip lines*/,
 		totallines = 0,
-		framecounter = 0, lastframetime = -1, truensync = 0, linesprocessed = 0;
+		framecounter = 0, lastframetime = -1, linesprocessed = 0;
 	int64_t frametrgcount = 0; // as a control we count the frame triggers
 	unsigned int TrgLineStartMask = 1 << (fh.trg_linestart - 1), TrgLineStopMask = 1 << (fh.trg_linestop - 1),
 		TrgFrameMask = 1 << (fh.trg_frame - 1);
@@ -237,7 +240,6 @@ int main(int argc, char** argv)
 	uint32_t* histogram = new uint32_t[MAX_CHANNELS * fh.pix_x * fh.pix_y];
 	std::memset(histogram, 0, sizeof(uint32_t) * MAX_CHANNELS * fh.pix_x * fh.pix_y);
 	uint32_t maxDtime = 0; // max val in histogram
-	uint32_t TTTRRecord = 0;
 
 #ifdef DOPERFORMANCEANALYSIS
 	__int64 pcFreq = 0, pcStart = 0, pcStop = 0;
@@ -250,32 +252,16 @@ int main(int argc, char** argv)
 	//////////////
 	// start processing of records
 	for (int64_t recnum = 0; recnum < fh.num_records; ++recnum) {
-		TTTRRecord = buffer.pop();
-		const uint32_t SpecialBitMask = 0x80000000,
-			nsyncmask = 1023,
-			dtimemask = 32767 << 10,
-			channelmask = 63 << 25;
-		unsigned	nsync = TTTRRecord & nsyncmask,
-			dtime = (TTTRRecord & dtimemask) >> 10,
-			channel = (TTTRRecord & channelmask) >> 25;
-
-		if (TTTRRecord & SpecialBitMask)
+		auto TTTRRecord = buffer.pop();
+		auto channel = processor.channel(TTTRRecord);
+		if (processor.isSpecial(TTTRRecord))
 		{
-			if (channel == 0x3F) //overflow
+			if (processor.processOverflow(TTTRRecord)) //overflow
 			{
-				//number of overflows is stored in nsync
-				if (nsync == 0) //if it is zero it is an old style single overflow
-				{
-					oflcorrection += T3WRAPAROUND;
-				}
-				else
-				{
-					oflcorrection += T3WRAPAROUND * nsync;
-				}
-			}
-			else if ((channel >= 1) && (channel <= 15)) //markers
+				continue;
+			} else if ((channel >= 1) && (channel <= 15)) //markers
 			{
-				truensync = oflcorrection + nsync;
+				auto truensync = processor.truesync(TTTRRecord);
 				//the time unit depends on sync period which can be obtained from the file header
 				unsigned int trigger = channel;
 				if ((trigger & TrgLineStartMask) != 0) {
@@ -291,7 +277,7 @@ int main(int argc, char** argv)
 					if ((framecounter>=first_frame) && (framecounter<=last_frame) && (linecounter >= 0) && (linecounter < fh.pix_y)) {
 						++linesprocessed;
 						uint32_t* lp = histogram + linecounter * MAX_CHANNELS * fh.pix_x;
-						for (auto pt : pixeltimes) {
+						for (const auto& pt : pixeltimes) {
 							int64_t x = std::max(int64_t(0), std::min(((int64_t(pt.pixeltime) * fh.pix_x) / lineduration), fh.pix_x - 1));
 							unsigned int dt = pt.dtime;
 							if (dt < MAX_CHANNELS) {
@@ -323,11 +309,10 @@ int main(int argc, char** argv)
 		{
 			if (isrecordingline && (framecounter >= first_frame) && (framecounter <= last_frame) && 
 					(linecounter >= 0) && ((channelofinterest < 0) || (channel == channelofinterest))) {
-				truensync = oflcorrection + nsync;
-				int64_t pixeltime = truensync - lastlinestart;
+				int64_t pixeltime = processor.truesync(TTTRRecord) - lastlinestart;
 				// store for later use:
-				PixelTime pt;
-				pt.dtime = dtime;
+				PixelTime pt{};
+				pt.dtime = processor.dtime(TTTRRecord);
 				pt.pixeltime = pixeltime;
 				pixeltimes.push_back(pt);
 			}
