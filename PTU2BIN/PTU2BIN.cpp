@@ -64,30 +64,6 @@ constexpr auto APP_NAME = "PTU2BIN", VERSION = "pre-2";
 // or be specific to our system.
 constexpr int	LINES_TO_SKIP = 1;
 
-
-// RecordTypes
-constexpr int64_t
-rtPicoHarpT3 = 0x00010303,    // (SubID = $00 ,RecFmt: $01) (V1), T-Mode: $03 (T3), HW: $03 (PicoHarp)
-rtPicoHarpT2 = 0x00010203,    // (SubID = $00 ,RecFmt: $01) (V1), T-Mode: $02 (T2), HW: $03 (PicoHarp)
-rtHydraHarpT3 = 0x00010304,    // (SubID = $00 ,RecFmt: $01) (V1), T-Mode: $03 (T3), HW: $04 (HydraHarp)
-rtHydraHarpT2 = 0x00010204,    // (SubID = $00 ,RecFmt: $01) (V1), T-Mode: $02 (T2), HW: $04 (HydraHarp)
-rtHydraHarp2T3 = 0x01010304,    // (SubID = $01 ,RecFmt: $01) (V2), T-Mode: $03 (T3), HW: $04 (HydraHarp)
-rtHydraHarp2T2 = 0x01010204,    // (SubID = $01 ,RecFmt: $01) (V2), T-Mode: $02 (T2), HW: $04 (HydraHarp)
-rtTimeHarp260NT3 = 0x00010305,    // (SubID = $00 ,RecFmt: $01) (V2), T-Mode: $03 (T3), HW: $05 (TimeHarp260N)
-rtTimeHarp260NT2 = 0x00010205,    // (SubID = $00 ,RecFmt: $01) (V2), T-Mode: $02 (T2), HW: $05 (TimeHarp260N)
-rtTimeHarp260PT3 = 0x00010306,    // (SubID = $00 ,RecFmt: $01) (V1), T-Mode: $02 (T3), HW: $06 (TimeHarp260P)
-rtTimeHarp260PT2 = 0x00010206,    // (SubID = $00 ,RecFmt: $01) (V1), T-Mode: $02 (T2), HW: $06 (TimeHarp260P)
-rtMultiHarpNT3 = 0x00010307,    // (SubID = $00 ,RecFmt: $01) (V1), T-Mode: $02 (T3), HW: $07 (MultiHarp150N)
-rtMultiHarpNT2 = 0x00010207;    // (SubID = $00 ,RecFmt: $01) (V1), T-Mode: $02 (T2), HW: $07 (MultiHarp150N)
-
-// We should be able to work with HydraHarp, MultiHarp and TimeHarp260 T3 Format
-bool RecordTypeIsSupported(int64_t recordtype)
-{
-	const auto supported_record_types = std::array{ rtHydraHarpT3, rtHydraHarp2T3, rtTimeHarp260NT3, rtTimeHarp260PT3, rtMultiHarpNT3 };
-	return std::find(supported_record_types.begin(), supported_record_types.end(), recordtype)!=supported_record_types.end();
-}
-
-
 struct BinHeader {
 	uint32_t PixX, PixY;
 	float PixResol;
@@ -219,7 +195,6 @@ int main(int argc, char** argv)
 		std::cout << "Evaluating all channels." << std::endl;
 	}
 
-	//constexpr int64_t T3WRAPAROUND = 1024;
 	int64_t lastlinestart = -1, lastlinestop = -1, lineduration = -1, linecounter = -LINES_TO_SKIP /*skip lines*/,
 		totallines = 0,
 		framecounter = 0, lastframetime = -1, linesprocessed = 0;
@@ -253,13 +228,14 @@ int main(int argc, char** argv)
 	// start processing of records
 	for (int64_t recnum = 0; recnum < fh.num_records; ++recnum) {
 		auto TTTRRecord = buffer.pop();
-		auto channel = processor.channel(TTTRRecord);
 		if (processor.isSpecial(TTTRRecord))
 		{
 			if (processor.processOverflow(TTTRRecord)) //overflow
 			{
 				continue;
-			} else if ((channel >= 1) && (channel <= 15)) //markers
+			}
+			auto channel = processor.channel(TTTRRecord);
+			if ((channel >= 1) && (channel <= 15)) //markers
 			{
 				auto truensync = processor.truesync(TTTRRecord);
 				//the time unit depends on sync period which can be obtained from the file header
@@ -307,6 +283,7 @@ int main(int argc, char** argv)
 		}
 		else // photon detected
 		{
+			auto channel = processor.channel(TTTRRecord);
 			if (isrecordingline && (framecounter >= first_frame) && (framecounter <= last_frame) && 
 					(linecounter >= 0) && ((channelofinterest < 0) || (channel == channelofinterest))) {
 				int64_t pixeltime = processor.truesync(TTTRRecord) - lastlinestart;

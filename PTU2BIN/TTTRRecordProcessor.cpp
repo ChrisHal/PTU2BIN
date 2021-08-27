@@ -42,7 +42,7 @@ template<std::size_t N> bool RecordTypeIsSupported(int64_t recordtype, const std
 }
 
 
-// curently, we are implementing support for one hardware platform
+// currently, we are implementing support for one hardware platform
 TTTRRecordProcessor::TTTRRecordProcessor() :specialmask{ THT3_SpecialBitMask },
 nsyncmask{ THT3_NSyncMask },
 dtimemask{ THT3_DTimeMask }, dtimeshift{ THT3_DTimeShift },
@@ -51,7 +51,7 @@ overflowperiod{ THT3_OverflowPeriod }, oflcorrection{ 0 },
 record_type{ 0 }
 {}
 
-// for now, only works for THT§ type records
+// for now, only works for THT3 type records
 bool TTTRRecordProcessor::init(const PTUFileHeader& fh)
 {
 	record_type = fh.record_type;
@@ -61,13 +61,19 @@ bool TTTRRecordProcessor::init(const PTUFileHeader& fh)
 bool TTTRRecordProcessor::processOverflow(uint32_t record)
 {
 	if (isSpecial(record)) { // might delete this check to improve speed?
-		if (channel(record) == 63) { // is overflow event
-			if (record_type != rtHydraHarpT3) {
-				oflcorrection += nsync(record) * overflowperiod;
+		if (record_type != rtPicoHarpT3) {
+			if (channel(record) == 63) { // is overflow event
+				if (record_type != rtHydraHarpT3) {
+					oflcorrection += nsync(record) * overflowperiod;
+				}
+				else { // always 1 overflow for old HydraHarp
+					oflcorrection += overflowperiod;
+				}
+				return true;
 			}
-			else { // always 1 overflow for old HydraHarp
-				oflcorrection += overflowperiod;
-			}
+		}
+		else if (dtime(record) == 0) { // PicoHarp T3
+			oflcorrection += overflowperiod;
 			return true;
 		}
 	}
