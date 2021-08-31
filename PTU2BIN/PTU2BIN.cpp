@@ -181,15 +181,20 @@ int main(int argc, char** argv)
 		std::cerr << "ERROR: some data missing from PTU file header" << std::endl;
 		exit(EXIT_FAILURE);
 	}
+	if (fh.measurement_submode != 3) {
+		std::cerr << "Sorry, submode " << Measurement_SubModes.at(fh.measurement_submode) << "not supported." << std::endl;
+		exit(EXIT_FAILURE);
+	}
 	if (!processor.init(fh)) {
 		std::cerr << "Unexpected record type." << std::endl;
 		exit(EXIT_FAILURE);
 	}
-	if (processor.isT2mode()) {
+	if (processor.isT2mode() || fh.measurement_mode != 3) {
 		std::cerr << "Sorry, T2 mode not supported (working on it)." << std::endl;
 		exit(EXIT_FAILURE);
 	}
-	std::cout << "estimated number of useful histogram channels " << fh.GlobRes / fh.Resolution << std::endl;
+	int num_useful_histo_ch = int(std::ceil(fh.GlobRes / fh.Resolution)); // TODO: check if ok for T2 data
+	std::cout << "estimated number of useful histogram channels: " << num_useful_histo_ch << std::endl;
 	std::cout << "total # records in file: " << fh.num_records << std::endl;
 	if (channelofinterest >= 0) {
 		std::cout << "Evaluating channel " << (channelofinterest + 1) << " only." << std::endl;

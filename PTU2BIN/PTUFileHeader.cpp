@@ -2,6 +2,8 @@
 #include "PTUFileHeader.h"
 
 // some important Tag Idents (TTagHead.Ident)
+const char Measurement_Mode[] = "Measurement_Mode";
+const char Measurement_SubMode[]= "Measurement_SubMode";
 const char TTTRTagTTTRRecType[] = "TTResultFormat_TTTRRecType";
 const char TTTRTagNumRecords[] = "TTResult_NumberOfRecords"; // Number of TTTR Records in the File;
 const char TTTRTagRes[] = "MeasDesc_Resolution";       // Resolution for the Dtime (T3 Only)
@@ -85,6 +87,17 @@ bool PTUFileHeader::ProcessFile(std::istream& infile)
 		switch (tghd.Typ)
 		{
 		case tyInt8:
+			if (std::strcmp(tghd.Ident, Measurement_Mode) == 0) {
+				measurement_mode = tghd.TagValue;
+				std::cout << "T-Mode: " << measurement_mode << std::endl;
+				break;
+			}
+			if (std::strcmp(tghd.Ident, Measurement_SubMode) == 0) {
+				measurement_submode = tghd.TagValue;
+				std::cout << "Measurement SubMode: " << measurement_submode << 
+					" (" << Measurement_SubModes.at(measurement_submode) << ")" << std::endl;
+				break;
+			}
 			if (strcmp(tghd.Ident, TTTRTagNumRecords) == 0) // Number of records
 				num_records = tghd.TagValue;
 			if (strcmp(tghd.Ident, TTTRTagTTTRRecType) == 0) // TTTR RecordType
@@ -163,6 +176,7 @@ bool PTUFileHeader::ProcessFile(std::istream& infile)
 
 bool PTUFileHeader::allNeededPresent()
 {
-	return num_records !=-1 && record_type != -1 && pix_x != -1 && pix_y != -1 &&
+	return measurement_mode != -1 && measurement_submode != -1 &&
+		num_records !=-1 && record_type != -1 && pix_x != -1 && pix_y != -1 &&
 		trg_frame != -1 && trg_linestart != -1 && trg_linestop !=-1;
 }
