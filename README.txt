@@ -4,10 +4,11 @@ Copyright (c) 2021 Christian R. Halaszovich
 Tools to convert PicoQuant PTU files (as written by e.g.
 PicoQuant's SymphoTime64) to BIN files or IgorPro binary wave files (IBW)
 containing pre-histogrammed data.
-This works for FLIM data in T3 format.
-The number of supported formats is quite limited as of now. Fell free to
-get in touch with me if you need additional formats supported. (PTU-files
-can differ somewhat in the internal format they use.)
+This works for FLIM data in T3 format. It has only been tested woth TimeHarp260P data
+so far.
+Feel free to get in touch with me if you need additional formats supported. Support
+for T2 mode is planned.
+(PTU-files can differ somewhat in the internal format they use.)
 
 There are two tools provided:
 PTU2BIN - This is the conversion tool that can be used to convert single PTU files.
@@ -23,7 +24,7 @@ Dependencies:
 cxxopts.hpp (available at https://github.com/jarro2783/cxxopts.git)
 This must be in your include path.
 PTU2BIN was build using version 2.2.0 of cxxopts, newer versions might contain
-breaking chabnges.
+breaking changes.
 
 Only the PTU2BIN executable needs to be build. The python script can be used "as is".
 Since in normal configuration only standard C++ is used building should work on
