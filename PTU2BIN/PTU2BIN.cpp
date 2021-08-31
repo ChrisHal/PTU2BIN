@@ -297,10 +297,7 @@ int main(int argc, char** argv)
 					(linecounter >= 0) && ((channelofinterest < 0) || (channel == channelofinterest))) {
 				int64_t pixeltime = processor.truesync(TTTRRecord) - lastlinestart;
 				// store for later use:
-				PixelTime pt{};
-				pt.dtime = processor.dtime(TTTRRecord);
-				pt.pixeltime = pixeltime;
-				pixeltimes.push_back(pt);
+				pixeltimes.push_back({processor.dtime(TTTRRecord), pixeltime});
 			}
 		}
 	}
