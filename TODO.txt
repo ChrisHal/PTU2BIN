@@ -1,6 +1,12 @@
 TODOs
+Improve handling of frame triggers. They seem to be inconsistent, either marking begin
+or end of frame.
+
+2021-08-31 support for all(?) formats - partially done, T2 mode is missing
+Note: Need to know how laser sync is recorded. Probably as channel events?
+
 2021-08-26
-checking if all data is present in file header
+checking if all data is present in file header - done
 
 2019-09-11
 Add support for counting of all channels. Idea: Zero or negative channel

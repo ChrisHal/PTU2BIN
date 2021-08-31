@@ -182,7 +182,11 @@ int main(int argc, char** argv)
 		exit(EXIT_FAILURE);
 	}
 	if (!processor.init(fh)) {
-		std::cerr << "Unexpected record type, was expecting TimeHarp260P (or compatible) T3 data." << std::endl;
+		std::cerr << "Unexpected record type." << std::endl;
+		exit(EXIT_FAILURE);
+	}
+	if (processor.isT2mode()) {
+		std::cerr << "Sorry, T2 mode not supported (working on it)." << std::endl;
 		exit(EXIT_FAILURE);
 	}
 	std::cout << "estimated number of useful histogram channels " << fh.GlobRes / fh.Resolution << std::endl;
