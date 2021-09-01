@@ -182,7 +182,7 @@ bool PTUFileHeader::ProcessFile(std::istream& infile)
 		default:
 			break;
 		}
-		if (strncmp(tghd.Ident, FileTagEnd, sizeof(FileTagEnd)) == 0) {
+		if (tghd.Typ == tyEmpty8 && strncmp(tghd.Ident, FileTagEnd, sizeof(FileTagEnd)) == 0) {
 			break; // all headers have been read
 		}
 	}

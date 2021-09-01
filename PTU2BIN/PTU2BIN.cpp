@@ -206,7 +206,7 @@ int main(int argc, char** argv)
 		std::cerr << "Sorry, T2 mode not supported (working on it)." << std::endl;
 		exit(EXIT_FAILURE);
 	}
-	int num_useful_histo_ch = int(std::ceil(fh.GlobRes / fh.Resolution)); // TODO: check if ok for T2 data
+	int num_useful_histo_ch = int(std::ceil(fh.GlobRes / fh.Resolution)) + 1; // TODO: check if ok for T2 data
 	std::cout << "estimated number of useful histogram channels: " << num_useful_histo_ch << std::endl;
 	std::cout << "total # records in file: " << fh.num_records << std::endl;
 	if (channelofinterest >= 0) {
