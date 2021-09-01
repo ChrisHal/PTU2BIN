@@ -30,8 +30,9 @@ class RecordBuffer
 public:
 	RecordBuffer(std::istream& InFile, size_t numrecords) : infile{ InFile }, buffer { new uint32_t[BUFFSIZE] },
 		bufidx { 0 }, bufnumelements{ 0 }, recordsremaining{ numrecords } {};
-	bool empty() { return bufidx == bufnumelements; };
-	bool noMoreData() { return empty() && recordsremaining == 0; };
+	~RecordBuffer() { delete[] buffer; };
+	bool empty() const { return bufidx == bufnumelements; };
+	bool noMoreData() const { return empty() && recordsremaining == 0; };
 	// return and remove top element:
 	uint32_t pop() {
 		if (empty()) {
