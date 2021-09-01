@@ -218,6 +218,7 @@ int main(int argc, char** argv)
 		int64_t pixeltime;
 	};
 	std::vector<PixelTime> pixeltimes;
+	pixeltimes.reserve(32768);
 
 	// space for histogramm data
 	constexpr auto MAX_CHANNELS = 512; // number of histogramm channels, same as max Dtime?
