@@ -96,7 +96,7 @@ bool PTUFileHeader::ProcessFile(std::istream& infile)
 			}
 			if (std::strcmp(tghd.Ident, Measurement_Mode) == 0) {
 				measurement_mode = tghd.TagValue;
-				std::cout << "T-Mode: " << measurement_mode << std::endl;
+				std::cout << "T-mode: " << measurement_mode << std::endl;
 				break;
 			}
 			if (std::strcmp(tghd.Ident, Measurement_SubMode) == 0) {

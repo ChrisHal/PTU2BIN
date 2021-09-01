@@ -177,16 +177,17 @@ int main(int argc, char** argv)
 		std::cerr << "error while reading file headers\n";
 		exit(EXIT_FAILURE);
 	}
-	if (!fh.allNeededPresent()) {
-		std::cerr << "ERROR: some data missing from PTU file header" << std::endl;
-		exit(EXIT_FAILURE);
-	}
 	if (fh.measurement_submode != 3) {
-		std::cerr << "Sorry, submode " << Measurement_SubModes.at(fh.measurement_submode) << "not supported." << std::endl;
+		std::cerr << "ERROR: Submode " << Measurement_SubModes.at(fh.measurement_submode) <<
+			" not supported. Must be 'Image'." << std::endl;
 		exit(EXIT_FAILURE);
 	}
 	if (fh.dimensions != 3) {
-		std::cerr << "Sorry, " << fh.dimensions << " not supported." << std::endl;
+		std::cerr << "ERROR: " << fh.dimensions << " dimensions not supported." << std::endl;
+		exit(EXIT_FAILURE);
+	}
+	if (!fh.allNeededPresent()) {
+		std::cerr << "ERROR: some data missing from PTU file header" << std::endl;
 		exit(EXIT_FAILURE);
 	}
 	if (fh.is_bidirect) {
