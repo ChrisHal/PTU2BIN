@@ -236,71 +236,77 @@ int main(int argc, char** argv)
 
 	//////////////
 	// start processing of records
-	for (int64_t recnum = 0; recnum < fh.num_records; ++recnum) {
-		auto TTTRRecord = buffer.pop();
-		if (processor.isSpecial(TTTRRecord))
-		{
-			if (processor.processOverflow(TTTRRecord)) //overflow
+	try {
+		for (int64_t recnum = 0; recnum < fh.num_records; ++recnum) {
+			auto TTTRRecord = buffer.pop();
+			if (processor.isSpecial(TTTRRecord))
 			{
-				continue;
-			}
-			auto channel = processor.channel(TTTRRecord);
-			if ((channel >= 1) && (channel <= 15)) //markers
-			{
-				auto truensync = processor.truesync(TTTRRecord);
-				//the time unit depends on sync period which can be obtained from the file header
-				unsigned int trigger = channel;
-				if ((trigger & TrgLineStartMask) != 0) {
-					lastlinestart = truensync;
-					++totallines;
-					isrecordingline = true;
+				if (processor.processOverflow(TTTRRecord)) //overflow
+				{
+					continue;
 				}
-				else if ((trigger & TrgLineStopMask) != 0 && isrecordingline) { // line ended
-					isrecordingline = false;
-					lastlinestop = truensync;
-					lineduration = lastlinestop - lastlinestart;
-					// process line data:
-					if ((framecounter>=first_frame) && (framecounter<=last_frame) && (linecounter >= 0) && (linecounter < fh.pix_y)) {
-						++linesprocessed;
-						uint32_t* lp = histogram + linecounter * MAX_CHANNELS * fh.pix_x;
-						for (const auto& pt : pixeltimes) {
-							int64_t x = std::max(int64_t(0), std::min(((int64_t(pt.pixeltime) * fh.pix_x) / lineduration), fh.pix_x - 1));
-							unsigned int dt = pt.dtime;
-							if (dt < MAX_CHANNELS) {
-								++lp[x * MAX_CHANNELS + dt];
-								maxDtime = std::max(dt, maxDtime);
+				auto channel = processor.channel(TTTRRecord);
+				if ((channel >= 1) && (channel <= 15)) //markers
+				{
+					auto truensync = processor.truesync(TTTRRecord);
+					//the time unit depends on sync period which can be obtained from the file header
+					unsigned int trigger = channel;
+					if ((trigger & TrgLineStartMask) != 0) {
+						lastlinestart = truensync;
+						++totallines;
+						isrecordingline = true;
+					}
+					else if ((trigger & TrgLineStopMask) != 0 && isrecordingline) { // line ended
+						isrecordingline = false;
+						lastlinestop = truensync;
+						lineduration = lastlinestop - lastlinestart;
+						// process line data:
+						if ((framecounter >= first_frame) && (framecounter <= last_frame) && (linecounter >= 0) && (linecounter < fh.pix_y)) {
+							++linesprocessed;
+							uint32_t* lp = histogram + linecounter * MAX_CHANNELS * fh.pix_x;
+							for (const auto& pt : pixeltimes) {
+								int64_t x = std::max(int64_t(0), std::min(((int64_t(pt.pixeltime) * fh.pix_x) / lineduration), fh.pix_x - 1));
+								unsigned int dt = pt.dtime;
+								if (dt < MAX_CHANNELS) {
+									++lp[x * MAX_CHANNELS + dt];
+									maxDtime = std::max(dt, maxDtime);
+								}
 							}
 						}
-					}
-					pixeltimes.clear();
-					++linecounter;
-					if (linecounter == fh.pix_y) {
-						++framecounter;
-						framehasstarted = false;
-						if (isterminal) { // show progress indicator only in terminal sessions
-							const char SPINNER[] = "-\\|/";
-							std::cout << SPINNER[framecounter & 3] << "\r" << std::flush; // NOTE: this has no significant effect on performance (tested)
+						pixeltimes.clear();
+						++linecounter;
+						if (linecounter == fh.pix_y) {
+							++framecounter;
+							framehasstarted = false;
+							if (isterminal) { // show progress indicator only in terminal sessions
+								const char SPINNER[] = "-\\|/";
+								std::cout << SPINNER[framecounter & 3] << "\r" << std::flush; // NOTE: this has no significant effect on performance (tested)
+							}
+							linecounter = -LINES_TO_SKIP;  // skip lines
 						}
-						linecounter = -LINES_TO_SKIP;  // skip lines
+					}
+					if (trigger & TrgFrameMask) { // we kind of ignore it, since it seems to be unreliable
+						framehasstarted = true;
+						lastframetime = truensync;
+						++frametrgcount;
 					}
 				}
-				if (trigger & TrgFrameMask) { // we kind of ignore it, since it seems to be unreliable
-					framehasstarted = true;
-					lastframetime = truensync;
-					++frametrgcount;
+			}
+			else // photon detected
+			{
+				auto channel = processor.channel(TTTRRecord);
+				if (isrecordingline && (framecounter >= first_frame) && (framecounter <= last_frame) &&
+					(linecounter >= 0) && ((channelofinterest < 0) || (channel == channelofinterest))) {
+					int64_t pixeltime = processor.truesync(TTTRRecord) - lastlinestart;
+					// store for later use:
+					pixeltimes.push_back({ processor.dtime(TTTRRecord), pixeltime });
 				}
 			}
 		}
-		else // photon detected
-		{
-			auto channel = processor.channel(TTTRRecord);
-			if (isrecordingline && (framecounter >= first_frame) && (framecounter <= last_frame) && 
-					(linecounter >= 0) && ((channelofinterest < 0) || (channel == channelofinterest))) {
-				int64_t pixeltime = processor.truesync(TTTRRecord) - lastlinestart;
-				// store for later use:
-				pixeltimes.push_back({processor.dtime(TTTRRecord), pixeltime});
-			}
-		}
+	}
+	catch (std::exception& e) {
+		std::cerr << e.what() << std::endl;
+		exit(EXIT_FAILURE);
 	}
 #ifdef DOPERFORMANCEANALYSIS
 	QueryPerformanceCounter((LARGE_INTEGER*)& pcStop);
