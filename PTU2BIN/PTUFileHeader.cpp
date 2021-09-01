@@ -10,7 +10,9 @@ const char TTTRTagRes[] = "MeasDesc_Resolution";       // Resolution for the Dti
 const char TTSyncRate[] = "TTResult_SyncRate";	// snyc rate, usually repetiton rate of laser
 const char TTTRTagGlobRes[] = "MeasDesc_GlobalResolution"; // Global Resolution of TimeTag(T2) /NSync (T3). usually intervall between laserpulses
 const char FileTagEnd[] = "Header_End";                // Always appended as last tag (BLOCKEND)
-const char	ImgHdrPixX[] = "ImgHdr_PixX", ImgHdrPixY[] = "ImgHdr_PixY",
+const char	ImgHdrBiDirect[]="ImgHdr_BiDirect", ImgHdrDimensions[]="ImgHdr_Dimensions",
+ImgHdrSinCorrection[] ="ImgHdr_SinCorrection",
+ImgHdrPixX[] = "ImgHdr_PixX", ImgHdrPixY[] = "ImgHdr_PixY",
 ImgHdrPixResol[] = "ImgHdr_PixResol", ImgHdrLineStart[] = "ImgHdr_LineStart",
 ImgHdrLineStop[] = "ImgHdr_LineStop", ImgHdrFrame[] = "ImgHdr_Frame",
 FileCreatingTime[] = "File_CreatingTime",
@@ -87,6 +89,11 @@ bool PTUFileHeader::ProcessFile(std::istream& infile)
 		switch (tghd.Typ)
 		{
 		case tyInt8:
+			if (std::strcmp(tghd.Ident, ImgHdrDimensions) == 0) {
+				dimensions = tghd.TagValue; // should match sub-mode?
+				std::cout << "Dimensions: " << dimensions << std::endl;
+				break;
+			}
 			if (std::strcmp(tghd.Ident, Measurement_Mode) == 0) {
 				measurement_mode = tghd.TagValue;
 				std::cout << "T-Mode: " << measurement_mode << std::endl;
@@ -102,6 +109,10 @@ bool PTUFileHeader::ProcessFile(std::istream& infile)
 				num_records = tghd.TagValue;
 			if (strcmp(tghd.Ident, TTTRTagTTTRRecType) == 0) // TTTR RecordType
 				record_type = tghd.TagValue;
+			if (std::strcmp(tghd.Ident, ImgHdrSinCorrection) == 0) {
+				sin_correction = tghd.TagValue;
+				break;
+			}
 			if (strcmp(tghd.Ident, ImgHdrPixX) == 0) {
 				pix_x = tghd.TagValue;
 				std::cout << "pix. x " << pix_x << std::endl;
@@ -131,6 +142,12 @@ bool PTUFileHeader::ProcessFile(std::istream& infile)
 			}
 			if (strcmp(tghd.Ident, ImgHdrPixResol) == 0)
 				PixResol = Int64ToDouble(tghd.TagValue); // in micrometer
+			break;
+		case tyBool8:
+			if (strcmp(tghd.Ident, ImgHdrBiDirect) == 0) {
+				is_bidirect = tghd.TagValue;
+				break;
+			}
 			break;
 		case tyTDateTime:
 			if (strcmp(tghd.Ident, FileCreatingTime) == 0) {

@@ -185,6 +185,19 @@ int main(int argc, char** argv)
 		std::cerr << "Sorry, submode " << Measurement_SubModes.at(fh.measurement_submode) << "not supported." << std::endl;
 		exit(EXIT_FAILURE);
 	}
+	if (fh.dimensions != 3) {
+		std::cerr << "Sorry, " << fh.dimensions << " not supported." << std::endl;
+		exit(EXIT_FAILURE);
+	}
+	if (fh.is_bidirect) {
+		std::cout << "WARNING: this is a bi-directional scan." <<
+			" Every 2nd line will be inverted." << std::endl;
+	}
+	if (fh.sin_correction != 0) {
+		std::cout << "WARNING: sinosoidal scan not supported. y-axis will be distorted." << std::endl;
+	}
+	//
+	// we are done checking the file header, now let's init processing
 	if (!processor.init(fh)) {
 		std::cerr << "Unexpected record type." << std::endl;
 		exit(EXIT_FAILURE);
