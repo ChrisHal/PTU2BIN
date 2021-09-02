@@ -14,7 +14,8 @@ class TTTRRecordProcessor
 	uint32_t specialmask,
 		nsyncmask,
 		dtimemask, dtimeshift,
-		channelmask, channelshift;
+		channelmask, channelshift,
+		markermask, markershift;
 	int64_t overflowperiod, oflcorrection, record_type;
 	bool isT2;
 public:
@@ -34,5 +35,6 @@ public:
 		return (record & dtimemask) >> dtimeshift;
 	};
 	uint32_t channel(uint32_t record) { return (record & channelmask) >> channelshift; };
+	uint32_t markers(uint32_t record) { return (record & markermask) >> markershift; };
 };
 

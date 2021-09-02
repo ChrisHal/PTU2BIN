@@ -61,7 +61,7 @@ constexpr auto APP_NAME = "PTU2BIN", VERSION = "pre-2";
 // It seems that a certain number of lines should be skipped when the PTU
 // file is processed. Here we define how many. In our system is 1 line.
 // I do not know yet if this is universally true. Might be a bug in SymphoTime
-// or be specific to our system.
+// or be specific to our system (like misconfigured trigger).
 constexpr int	LINES_TO_SKIP = 1;
 
 struct BinHeader {
@@ -178,12 +178,13 @@ int main(int argc, char** argv)
 		exit(EXIT_FAILURE);
 	}
 	if (fh.measurement_submode != 3) {
+		// NOTE: "Measurement_SubMode" is mandatory, so we assume it is set in PTU file 
 		std::cerr << "ERROR: Submode " << Measurement_SubModes.at(fh.measurement_submode) <<
 			" not supported. Must be 'Image'." << std::endl;
 		exit(EXIT_FAILURE);
 	}
-	if (fh.dimensions != 3) {
-		std::cerr << "ERROR: " << fh.dimensions << " dimensions not supported." << std::endl;
+	if (fh.dimensions != 3 && fh.dimensions != -1) {
+		std::cerr << "ERROR: " << fh.dimensions << " dimensions not supported. Must be 3." << std::endl;
 		exit(EXIT_FAILURE);
 	}
 	if (!fh.allNeededPresent()) {
@@ -218,7 +219,8 @@ int main(int argc, char** argv)
 		std::cout << "Evaluating all channels." << std::endl;
 	}
 
-	int64_t lastlinestart = -1, lastlinestop = -1, lineduration = -1, linecounter = -LINES_TO_SKIP /*skip lines*/,
+	int lines_to_skip = LINES_TO_SKIP;
+	int64_t lastlinestart = -1, lastlinestop = -1, lineduration = -1, linecounter = -lines_to_skip /*skip lines*/,
 		totallines = 0,
 		framecounter = 0, lastframetime = -1, linesprocessed = 0;
 	int64_t frametrgcount = 0; // as a control we count the frame triggers
@@ -235,9 +237,9 @@ int main(int argc, char** argv)
 	pixeltimes.reserve(32768);
 
 	// space for histogramm data
-	constexpr auto MAX_CHANNELS = 512; // number of histogramm channels, same as max Dtime?
-	uint32_t* histogram = new uint32_t[MAX_CHANNELS * fh.pix_x * fh.pix_y];
-	std::memset(histogram, 0, sizeof(uint32_t) * MAX_CHANNELS * fh.pix_x * fh.pix_y);
+	size_t max_hist_channels = std::max(512, num_useful_histo_ch); // number of histogramm channels, same as max Dtime?
+	uint32_t* histogram = new uint32_t[max_hist_channels * fh.pix_x * fh.pix_y];
+	std::memset(histogram, 0, sizeof(uint32_t) * max_hist_channels * fh.pix_x * fh.pix_y);
 	uint32_t maxDtime = 0; // max val in histogram
 
 #ifdef DOPERFORMANCEANALYSIS
@@ -259,52 +261,71 @@ int main(int argc, char** argv)
 				{
 					continue;
 				}
-				auto channel = processor.channel(TTTRRecord);
-				if ((channel >= 1) && (channel <= 15)) //markers
-				{
-					auto truensync = processor.truesync(TTTRRecord);
-					//the time unit depends on sync period which can be obtained from the file header
-					unsigned int trigger = channel;
-					if ((trigger & TrgLineStartMask) != 0) {
-						lastlinestart = truensync;
-						++totallines;
-						isrecordingline = true;
+				auto trigger = processor.markers(TTTRRecord);
+				// for the time being, we assume that any special record that is not an overflow
+				// is a marker record.
+				//if ((channel >= 1) && (channel <= 15)) //This is true only for TimeHarp260 and similar!
+				//{
+				auto truensync = processor.truesync(TTTRRecord);
+				//unsigned int trigger = channel;
+				if (trigger & TrgFrameMask) { // we kind of ignore it, since it seems to be unreliable
+					framehasstarted = true;
+					lastframetime = truensync;
+					++frametrgcount;
+#ifndef NDEBUG
+					if (totallines > 0) {
+						std::cout << "------------> Frame-Trigger at end of frame." << std::endl;
 					}
-					else if ((trigger & TrgLineStopMask) != 0 && isrecordingline) { // line ended
-						isrecordingline = false;
-						lastlinestop = truensync;
-						lineduration = lastlinestop - lastlinestart;
-						// process line data:
-						if ((framecounter >= first_frame) && (framecounter <= last_frame) && (linecounter >= 0) && (linecounter < fh.pix_y)) {
-							++linesprocessed;
-							uint32_t* lp = histogram + linecounter * MAX_CHANNELS * fh.pix_x;
-							for (const auto& pt : pixeltimes) {
-								int64_t x = std::max(int64_t(0), std::min(((int64_t(pt.pixeltime) * fh.pix_x) / lineduration), fh.pix_x - 1));
-								unsigned int dt = pt.dtime;
-								if (dt < MAX_CHANNELS) {
-									++lp[x * MAX_CHANNELS + dt];
-									maxDtime = std::max(dt, maxDtime);
-								}
+#endif // !NDEBUG
+				}
+				if ((trigger & TrgLineStartMask) != 0) {
+					lastlinestart = truensync;
+					++totallines;
+					isrecordingline = true;
+				}
+				else if ((trigger & TrgLineStopMask) != 0 && isrecordingline) { // line ended
+					isrecordingline = false;
+					if (framehasstarted && linecounter < 0) {
+						// no need to skip any more lines, since frame trigger came at start of frame
+						// (the strange handling
+						// of the frame trigger is necessary, because in some recordings the frame trigger
+						// comes at end of frame, not at start
+						linecounter = 0;
+						lines_to_skip = 0;
+						framehasstarted = false;
+#ifndef NDEBUG
+						std::cout << "------------> Frame-Trigger at start of frame." << std::endl;
+#endif // !NDEBUG
+					}
+					lastlinestop = truensync;
+					lineduration = lastlinestop - lastlinestart;
+					// process line data:
+					if ((framecounter >= first_frame) && (framecounter <= last_frame) && (linecounter >= 0) && (linecounter < fh.pix_y)) {
+						++linesprocessed;
+						uint32_t* lp = histogram + linecounter * max_hist_channels * fh.pix_x;
+						for (const auto& pt : pixeltimes) {
+							int64_t x = std::max(int64_t(0), std::min(((int64_t(pt.pixeltime) * fh.pix_x) / lineduration), fh.pix_x - 1));
+							unsigned int dt = pt.dtime;
+							if (dt < max_hist_channels) {
+								++lp[x * max_hist_channels + dt];
+								maxDtime = std::max(dt, maxDtime);
 							}
 						}
-						pixeltimes.clear();
-						++linecounter;
-						if (linecounter == fh.pix_y) {
-							++framecounter;
-							framehasstarted = false;
-							if (isterminal) { // show progress indicator only in terminal sessions
-								const char SPINNER[] = "-\\|/";
-								std::cout << SPINNER[framecounter & 3] << "\r" << std::flush; // NOTE: this has no significant effect on performance (tested)
-							}
-							linecounter = -LINES_TO_SKIP;  // skip lines
-						}
 					}
-					if (trigger & TrgFrameMask) { // we kind of ignore it, since it seems to be unreliable
-						framehasstarted = true;
-						lastframetime = truensync;
-						++frametrgcount;
+					pixeltimes.clear();
+					++linecounter;
+					if (linecounter == fh.pix_y - 1 + lines_to_skip) {
+						++framecounter;
+						framehasstarted = false;
+						if (isterminal) { // show progress indicator only in terminal sessions
+							const char SPINNER[] = "-\\|/";
+							std::cout << SPINNER[framecounter & 3] << "\r" << std::flush; // NOTE: this has no significant effect on performance (tested)
+						}
+						linecounter = -lines_to_skip;  // skip lines
 					}
 				}
+
+				//				}
 			}
 			else // photon detected
 			{
@@ -336,7 +357,7 @@ int main(int argc, char** argv)
 	if (frametrgcount != framecounter) {
 		std::cout << "WARNING: unexpected number of frame triggers in file (" << frametrgcount << ")" << std::endl;
 	}
-	if (totallines != ((fh.pix_y + LINES_TO_SKIP) * framecounter)) {
+	if (totallines != ((fh.pix_y + lines_to_skip) * framecounter)) {
 		std::cout << "WARNING: total lines in file do not match expected num. of lines" << std::endl;
 	}
 	std::cout << "max Dtime " << maxDtime << std::endl;
@@ -369,7 +390,7 @@ int main(int argc, char** argv)
 	}
 	int res = 0;
 	if (!exporting_ibw) {
-		res = ExportBinFile(outfile, histogram, fh.pix_x, fh.pix_y, fh.PixResol, fh.Resolution, MAX_CHANNELS, maxDtime);
+		res = ExportBinFile(outfile, histogram, fh.pix_x, fh.pix_y, fh.PixResol, fh.Resolution, max_hist_channels, maxDtime);
 	}
 	else {
 		auto lastslash = outfilename.find_last_of("/\\");
@@ -385,7 +406,7 @@ int main(int argc, char** argv)
 			wavename = "_" + wavename;
 			std::cout << "wavename amended -> " << wavename << std::endl;
 		}
-		res = ExportIBWFile(outfile, histogram, fh.pix_x, fh.pix_y, fh.PixResol, fh.Resolution, MAX_CHANNELS,
+		res = ExportIBWFile(outfile, histogram, fh.pix_x, fh.pix_y, fh.PixResol, fh.Resolution, max_hist_channels,
 			maxDtime, wavename, fh.filedate);
 	}
 	if (res != 0) {

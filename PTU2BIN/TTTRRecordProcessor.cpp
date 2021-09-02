@@ -58,6 +58,7 @@ TTTRRecordProcessor::TTTRRecordProcessor() :specialmask{ THT3_SpecialBitMask },
 nsyncmask{ THT3_NSyncMask },
 dtimemask{ THT3_DTimeMask }, dtimeshift{ THT3_DTimeShift },
 channelmask{ THT3_ChannelMask }, channelshift{ THT3_ChannelShift },
+markermask{ THT3_ChannelMask }, markershift{ THT3_ChannelShift },
 overflowperiod{ THT3_OverflowPeriod }, oflcorrection{ 0 },
 record_type{ 0 },
 isT2{ false }
@@ -77,6 +78,8 @@ bool TTTRRecordProcessor::init(const PTUFileHeader& fh)
 		dtimeshift = PHT3_DTimeShift;
 		channelmask = PHT3_ChannelMask;
 		channelshift = PHT3_ChannelShift;
+		markermask = PHT3_DTimeMask;
+		markershift = PHT3_DTimeShift;
 		overflowperiod = PHT3_OverflowPeriod;
 		return true;
 	}
