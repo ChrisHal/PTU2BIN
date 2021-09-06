@@ -15,6 +15,7 @@ class RecordBuffer
 	std::unique_ptr<uint32_t[]> buffer;
 	size_t bufidx, bufnumelements, recordsremaining;
 
+	bool empty() const { return bufidx == bufnumelements; };
 	void fillbuffer() {
 		if (recordsremaining == 0) {
 			throw std::range_error("no more data");
@@ -31,7 +32,6 @@ class RecordBuffer
 public:
 	RecordBuffer(std::istream& InFile, size_t numrecords) : infile{ InFile }, buffer { new uint32_t[BUFFSIZE] },
 		bufidx { 0 }, bufnumelements{ 0 }, recordsremaining{ numrecords } {};
-	bool empty() const { return bufidx == bufnumelements; };
 	bool noMoreData() const { return empty() && recordsremaining == 0; };
 	// return and remove top element:
 	uint32_t pop() {
