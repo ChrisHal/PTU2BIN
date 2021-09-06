@@ -113,6 +113,25 @@ bool TTTRRecordProcessor::init(const PTUFileHeader& fh)
 	return false;
 }
 
+
+bool TTTRRecordProcessor::isMarker(uint32_t record) const
+{
+	if (isSpecial(record)) {
+		if ((record_type == rtPicoHarpT3 && dtime(record) == 0) ||
+			(record_type == rtPicoHarpT2 && (record & 0xf) == 0)) {
+			return false; // is overflow event
+		}
+		if (record_type != rtPicoHarpT3 && record_type != rtPicoHarpT2) {
+			if (channel(record) == 63) { // is overflow event
+				return false; // is overflow event
+			}
+		}
+		return true;
+	}
+	return false;
+}
+
+
 bool TTTRRecordProcessor::processOverflow(uint32_t record)
 {
 #ifndef NDEBUG
