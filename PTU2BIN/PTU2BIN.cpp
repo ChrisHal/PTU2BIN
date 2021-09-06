@@ -18,6 +18,7 @@
 #include <algorithm>
 #include <iterator>
 #include <limits>
+#include <memory>
 #include <cstdint>
 #include <cstring>
 #include <cstdio>
@@ -238,8 +239,8 @@ int main(int argc, char** argv)
 
 	// space for histogramm data
 	size_t max_hist_channels = std::max(512, num_useful_histo_ch); // number of histogramm channels, same as max Dtime?
-	uint32_t* histogram = new uint32_t[max_hist_channels * fh.pix_x * fh.pix_y];
-	std::memset(histogram, 0, sizeof(uint32_t) * max_hist_channels * fh.pix_x * fh.pix_y);
+	auto histogram = std::make_unique<uint32_t[]>(max_hist_channels * fh.pix_x * fh.pix_y);
+	std::memset(histogram.get(), 0, sizeof(uint32_t) * max_hist_channels * fh.pix_x * fh.pix_y);
 	uint32_t maxDtime = 0; // max val in histogram
 
 #ifdef DOPERFORMANCEANALYSIS
@@ -302,7 +303,7 @@ int main(int argc, char** argv)
 					// process line data:
 					if ((framecounter >= first_frame) && (framecounter <= last_frame) && (linecounter >= 0) && (linecounter < fh.pix_y)) {
 						++linesprocessed;
-						uint32_t* lp = histogram + linecounter * max_hist_channels * fh.pix_x;
+						uint32_t* lp = histogram.get() + linecounter * max_hist_channels * fh.pix_x;
 						for (const auto& pt : pixeltimes) {
 							int64_t x = std::max(int64_t(0), std::min(((int64_t(pt.pixeltime) * fh.pix_x) / lineduration), fh.pix_x - 1));
 							unsigned int dt = pt.dtime;
@@ -390,7 +391,7 @@ int main(int argc, char** argv)
 	}
 	int res = 0;
 	if (!exporting_ibw) {
-		res = ExportBinFile(outfile, histogram, fh.pix_x, fh.pix_y, fh.PixResol, fh.Resolution, max_hist_channels, maxDtime);
+		res = ExportBinFile(outfile, histogram.get(), fh.pix_x, fh.pix_y, fh.PixResol, fh.Resolution, max_hist_channels, maxDtime);
 	}
 	else {
 		auto lastslash = outfilename.find_last_of("/\\");
@@ -406,7 +407,7 @@ int main(int argc, char** argv)
 			wavename = "_" + wavename;
 			std::cout << "wavename amended -> " << wavename << std::endl;
 		}
-		res = ExportIBWFile(outfile, histogram, fh.pix_x, fh.pix_y, fh.PixResol, fh.Resolution, max_hist_channels,
+		res = ExportIBWFile(outfile, histogram.get(), fh.pix_x, fh.pix_y, fh.PixResol, fh.Resolution, max_hist_channels,
 			maxDtime, wavename, fh.filedate);
 	}
 	if (res != 0) {
@@ -416,7 +417,6 @@ int main(int argc, char** argv)
 	}
 	outfile.close();
 
-	delete[] histogram;
 	std::cout << "Done." << std::endl;
 	exit(EXIT_SUCCESS);
 }

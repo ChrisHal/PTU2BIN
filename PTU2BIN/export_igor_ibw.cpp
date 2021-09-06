@@ -1,5 +1,6 @@
 #include <ostream>
 #include <string>
+#include <memory>
 #include <cstring>
 #include "export_igor_ibw.h"
 
@@ -60,8 +61,8 @@ int ExportIBWFile(std::ostream& os, uint32_t* histogram, int64_t pix_x,
 	cksum = Checksum((short*)& wh, cksum, numbytes_wh);
 	bh.checksum = -cksum;
 
-	auto buffer = new uint32_t[npnts];
-	auto p = buffer;
+	auto buffer = std::make_unique<uint32_t[]>(npnts);
+	auto p = buffer.get();
 	// re-order data, to have time as the 3rd dimension
 	for (int64_t t = 0; t < max_export_channel; ++t) {
 		for (int64_t y = 0; y < pix_y; ++y) {
@@ -72,8 +73,7 @@ int ExportIBWFile(std::ostream& os, uint32_t* histogram, int64_t pix_x,
 	}
 	os.write((char*)& bh, sizeof(bh));
 	os.write((char*)& wh, numbytes_wh);
-	os.write((char*)buffer, sizeof(uint32_t) * npnts);
-	delete[] buffer; buffer = 0;
+	os.write((char*)buffer.get(), sizeof(uint32_t) * npnts);
 	if(!os.good()) {
 		return 1;
 	}

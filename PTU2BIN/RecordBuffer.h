@@ -6,12 +6,13 @@
 #include <stdexcept>
 #include <cstdint>
 #include <istream>
+#include <memory>
 
 constexpr size_t BUFFSIZE = 1024;
 class RecordBuffer
 {
 	std::istream& infile;
-	uint32_t* buffer;
+	std::unique_ptr<uint32_t[]> buffer;
 	size_t bufidx, bufnumelements, recordsremaining;
 
 	void fillbuffer() {
@@ -19,7 +20,7 @@ class RecordBuffer
 			throw std::range_error("no more data");
 		}
 		size_t numtoread = std::min(BUFFSIZE, recordsremaining);
-		infile.read((char*)buffer, sizeof(uint32_t) * numtoread);
+		infile.read((char*)buffer.get(), sizeof(uint32_t) * numtoread);
 		if (!infile.good()) {
 			throw std::runtime_error("Error while reading TTTR records from infile. Unexpected end of file.");
 		}
@@ -30,7 +31,6 @@ class RecordBuffer
 public:
 	RecordBuffer(std::istream& InFile, size_t numrecords) : infile{ InFile }, buffer { new uint32_t[BUFFSIZE] },
 		bufidx { 0 }, bufnumelements{ 0 }, recordsremaining{ numrecords } {};
-	~RecordBuffer() { delete[] buffer; };
 	bool empty() const { return bufidx == bufnumelements; };
 	bool noMoreData() const { return empty() && recordsremaining == 0; };
 	// return and remove top element:
