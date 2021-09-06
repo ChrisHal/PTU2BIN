@@ -383,10 +383,10 @@ int main(int argc, char** argv)
 					if (linecounter == fh.pix_y - 1 + lines_to_skip) {
 						++framecounter;
 						framehasstarted = false;
-						if (isterminal) { // show progress indicator only in terminal sessions
-							const char SPINNER[] = "-\\|/";
-							std::cout << SPINNER[framecounter & 3] << "\r" << std::flush; // NOTE: this has no significant effect on performance (tested)
-						}
+						//if (isterminal) { // show progress indicator only in terminal sessions
+						//	const char SPINNER[] = "-\\|/";
+						//	std::cout << SPINNER[framecounter & 3] << "\r" << std::flush; // NOTE: this has no significant effect on performance (tested)
+						//}
 						linecounter = -lines_to_skip;  // skip lines
 					}
 				}
@@ -410,6 +410,9 @@ int main(int argc, char** argv)
 					// store for later use:
 					pixeltimes.push_back({ processor.dtime(TTTRRecord), pixeltime });
 				}
+			}
+			if (isterminal && (recnum & 0xffff)==0) { // show progress indicator only in terminal sessions
+				std::cout << 100 * recnum / fh.num_records << "% done\r" << std::flush; // NOTE: this has no significant effect on performance (tested)
 			}
 		}
 	}
