@@ -13,12 +13,13 @@ class RecordBuffer
 {
 	std::istream& infile;
 	std::unique_ptr<uint32_t[]> buffer;
-	size_t bufidx, bufnumelements, recordsremaining;
+	size_t bufidx, bufnumelements, recordsremaining,
+		recordstotal, fileoffset;
 
 	bool empty() const { return bufidx == bufnumelements; };
 	void fillbuffer() {
 		if (recordsremaining == 0) {
-			throw std::range_error("no more data");
+			throw std::range_error("trying to read from empty buffer (no more data)");
 		}
 		size_t numtoread = std::min(BUFFSIZE, recordsremaining);
 		infile.read((char*)buffer.get(), sizeof(uint32_t) * numtoread);
@@ -30,9 +31,14 @@ class RecordBuffer
 		bufidx = 0;
 	};
 public:
-	RecordBuffer(std::istream& InFile, size_t numrecords) : infile{ InFile }, buffer { new uint32_t[BUFFSIZE] },
-		bufidx { 0 }, bufnumelements{ 0 }, recordsremaining{ numrecords } {};
+	RecordBuffer(std::istream& InFile, size_t numrecords) : infile{ InFile }, buffer{ new uint32_t[BUFFSIZE] },
+		bufidx{ 0 }, bufnumelements{ 0 }, recordsremaining{ numrecords }, recordstotal{ numrecords },
+		fileoffset{ size_t(InFile.tellg()) }{};
 	bool noMoreData() const { return empty() && recordsremaining == 0; };
+	void rewind() { // rewind to first record
+		bufidx = 0; bufnumelements = 0; recordsremaining = recordstotal;
+		infile.seekg(fileoffset);
+	};
 	// return and remove top element:
 	uint32_t pop() {
 		if (empty()) {

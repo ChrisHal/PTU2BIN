@@ -96,6 +96,69 @@ int ExportBinFile(std::ostream& os, uint32_t* histogram, int64_t pix_x, int64_t 
 	return 0; // success
 }
 
+enum FRAME_TRIGGER_TYPE {
+	FRAMETRG_UNKNOW = 0,
+	FRAMETRG_AT_START = 1,
+	FRAMETRG_AT_STOP = 2
+};
+
+
+void AnalyzeTriggers(RecordBuffer& buffer, const TTTRRecordProcessor& processor, const PTUFileHeader& fh, int& frame_trg_type, int64_t& lines_to_skip)
+{
+	int64_t total_linestarts{}, total_linestops{};
+		//total_frames{};
+	unsigned int TrgLineStartMask = 1 << (fh.trg_linestart - 1), TrgLineStopMask = 1 << (fh.trg_linestop - 1),
+		TrgFrameMask = 1 << (fh.trg_frame - 1);
+	frame_trg_type = FRAMETRG_UNKNOW, lines_to_skip = 0;
+
+	while (!buffer.noMoreData()) {
+		auto record = buffer.pop();
+		if (processor.isMarker(record)) {
+			auto marker = processor.markers(record);
+			if (!buffer.noMoreData()) {
+				// test if next record is also a marker event
+				auto next_record = buffer.peek();
+				if (processor.isMarker(next_record) &&
+					processor.nsync(next_record) == processor.nsync(record)) {
+					next_record = buffer.pop();
+					marker |= processor.markers(next_record);
+				}
+			}
+			//if (marker & TrgFrameMask) {
+			//	++total_frames;
+			//}
+			if (marker & TrgLineStartMask) {
+				++total_linestarts;
+			}
+			if (marker & TrgLineStopMask) {
+				++total_linestops;
+			}
+			if (marker & TrgFrameMask){
+				if (total_linestarts != total_linestops) {
+					std::cout << "frame trigger out of sequence" << std::endl;
+				}
+				if (total_linestops == 0) {
+					frame_trg_type = FRAMETRG_AT_START;
+					lines_to_skip = 0;
+#ifndef NDEBUG
+					std::cout << "frame trigger at start, lines to skip " << lines_to_skip << std::endl;
+#endif // !NDEBUG
+					break;
+				}
+				if (frame_trg_type != FRAMETRG_AT_START) {
+					frame_trg_type = FRAMETRG_AT_STOP;
+					lines_to_skip = total_linestarts - fh.pix_y;
+#ifndef NDEBUG
+					std::cout << "frame trigger at end, lines to skip " << lines_to_skip << std::endl;
+#endif // !NDEBUG
+					break;
+				}
+			}
+		}
+	}
+	buffer.rewind();
+}
+
 cxxopts::ParseResult parse(int argc, char** argv, std::string& infile, std::string& outfile, int& channelofinterest,
 	int64_t& first_frame, int64_t& last_frame)
 {
@@ -220,11 +283,7 @@ int main(int argc, char** argv)
 		std::cout << "Evaluating all channels." << std::endl;
 	}
 
-	int lines_to_skip = LINES_TO_SKIP;
-	int64_t lastlinestart = -1, lastlinestop = -1, lineduration = -1, linecounter = -lines_to_skip /*skip lines*/,
-		totallines = 0,
-		framecounter = 0, lastframetime = -1, linesprocessed = 0;
-	int64_t frametrgcount = 0; // as a control we count the frame triggers
+
 	unsigned int TrgLineStartMask = 1 << (fh.trg_linestart - 1), TrgLineStopMask = 1 << (fh.trg_linestop - 1),
 		TrgFrameMask = 1 << (fh.trg_frame - 1);
 	bool isrecordingline = false, framehasstarted = false;
@@ -243,6 +302,13 @@ int main(int argc, char** argv)
 	std::memset(histogram.get(), 0, sizeof(uint32_t) * max_hist_channels * fh.pix_x * fh.pix_y);
 	uint32_t maxDtime = 0; // max val in histogram
 
+	int64_t lastlinestart = -1, lastlinestop = -1, lineduration = -1, linecounter = 0 /*skip lines*/,
+		totallines = 0, lines_to_skip = 0,
+		framecounter = 0, lastframetime = -1, linesprocessed = 0;
+	int frame_trg_type = FRAMETRG_UNKNOW;
+	int64_t frametrgcount = 0; // as a control we count the frame triggers
+
+
 #ifdef DOPERFORMANCEANALYSIS
 	__int64 pcFreq = 0, pcStart = 0, pcStop = 0;
 	QueryPerformanceFrequency((LARGE_INTEGER*)& pcFreq);
@@ -254,6 +320,9 @@ int main(int argc, char** argv)
 	//////////////
 	// start processing of records
 	try {
+		AnalyzeTriggers(buffer, processor, fh, frame_trg_type, lines_to_skip);
+		linecounter = -lines_to_skip;
+
 		for (int64_t recnum = 0; recnum < fh.num_records; ++recnum) {
 			auto TTTRRecord = buffer.pop();
 			if (processor.isSpecial(TTTRRecord))
@@ -263,21 +332,29 @@ int main(int argc, char** argv)
 					continue;
 				}
 				auto trigger = processor.markers(TTTRRecord);
+				if (!buffer.noMoreData()) {
+					// test if next record is also a marker event
+					auto next_record = buffer.peek();
+					if (processor.isMarker(next_record) &&
+						processor.nsync(next_record) == processor.nsync(TTTRRecord)) {
+						next_record = buffer.pop();
+						++recnum;
+						trigger |= processor.markers(next_record); // merge marker events
+#ifndef NDEBUG
+						std::cout << "marker events merged" << std::endl;
+#endif // !NDEBUG
+					}
+				}
 				// for the time being, we assume that any special record that is not an overflow
 				// is a marker record.
 				//if ((channel >= 1) && (channel <= 15)) //This is true only for TimeHarp260 and similar!
 				//{
 				auto truensync = processor.truesync(TTTRRecord);
-				//unsigned int trigger = channel;
-				if (trigger & TrgFrameMask) { // we kind of ignore it, since it seems to be unreliable
+				if ((trigger & TrgFrameMask) && frame_trg_type == FRAMETRG_AT_START) {
 					framehasstarted = true;
 					lastframetime = truensync;
-					++frametrgcount;
-#ifndef NDEBUG
-					if (totallines > 0) {
-						std::cout << "------------> Frame-Trigger at end of frame." << std::endl;
-					}
-#endif // !NDEBUG
+					//++frametrgcount;
+					linecounter = 0; // this also signals that line should be processed
 				}
 				if ((trigger & TrgLineStartMask) != 0) {
 					lastlinestart = truensync;
@@ -286,18 +363,6 @@ int main(int argc, char** argv)
 				}
 				else if ((trigger & TrgLineStopMask) != 0 && isrecordingline) { // line ended
 					isrecordingline = false;
-					if (framehasstarted && linecounter < 0) {
-						// no need to skip any more lines, since frame trigger came at start of frame
-						// (the strange handling
-						// of the frame trigger is necessary, because in some recordings the frame trigger
-						// comes at end of frame, not at start
-						linecounter = 0;
-						lines_to_skip = 0;
-						framehasstarted = false;
-#ifndef NDEBUG
-						std::cout << "------------> Frame-Trigger at start of frame." << std::endl;
-#endif // !NDEBUG
-					}
 					lastlinestop = truensync;
 					lineduration = lastlinestop - lastlinestart;
 					// process line data:
@@ -325,7 +390,15 @@ int main(int argc, char** argv)
 						linecounter = -lines_to_skip;  // skip lines
 					}
 				}
-
+				if ((trigger & TrgFrameMask) && frame_trg_type == FRAMETRG_AT_STOP) {
+					framehasstarted = true;
+					lastframetime = truensync;
+					//++frametrgcount;
+					linecounter = -lines_to_skip;
+				}
+				if (trigger & TrgFrameMask) {
+					++frametrgcount;
+				}
 				//				}
 			}
 			else // photon detected
@@ -341,7 +414,7 @@ int main(int argc, char** argv)
 		}
 	}
 	catch (std::exception& e) {
-		std::cerr << e.what() << std::endl;
+		std::cerr << "ERROR: " << e.what() << std::endl;
 		exit(EXIT_FAILURE);
 	}
 #ifdef DOPERFORMANCEANALYSIS
@@ -360,6 +433,11 @@ int main(int argc, char** argv)
 	}
 	if (totallines != ((fh.pix_y + lines_to_skip) * framecounter)) {
 		std::cout << "WARNING: total lines in file do not match expected num. of lines" << std::endl;
+#ifndef NDEBUG
+		std::cout << "Lines per processed frame: " << double(totallines) / double(framecounter) <<
+			"\nLines per frame trigger: " << double(totallines) / double(frametrgcount) << std::endl;
+#endif // !NDEBUG
+
 	}
 	std::cout << "max Dtime " << maxDtime << std::endl;
 	double microsec_lastpixeltime = double(lastlinestop - lastlinestart) * fh.GlobRes * 1.0e6 / double(fh.pix_x);
