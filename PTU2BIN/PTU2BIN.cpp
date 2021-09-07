@@ -21,6 +21,7 @@
 #include <memory>
 #include <cstdint>
 #include <cstring>
+#include <cassert>
 #include <cstdio>
 #include <cmath>
 #define __STDC_WANT_LIB_EXT1__
@@ -59,11 +60,7 @@ extern int ExportIBWFile(std::ostream& os, uint32_t* histogram, int64_t pix_x,
 
 constexpr auto APP_NAME = "PTU2BIN", VERSION = "pre-2";
 
-// It seems that a certain number of lines should be skipped when the PTU
-// file is processed. Here we define how many. In our system is 1 line.
-// I do not know yet if this is universally true. Might be a bug in SymphoTime
-// or be specific to our system (like misconfigured trigger).
-constexpr int	LINES_TO_SKIP = 1;
+
 
 struct BinHeader {
 	uint32_t PixX, PixY;
@@ -102,7 +99,12 @@ enum FRAME_TRIGGER_TYPE {
 	FRAMETRG_AT_STOP = 2
 };
 
-
+// It seems that a certain number of lines should be skipped when the PTU
+// file is processed. Here we define how many. In our system is 1 line.
+// I do not know yet if this is universally true. Might be a bug in SymphoTime
+// or be specific to our system (like misconfigured trigger).
+// AnalyzeTriggers can automatically detect if and how many lines
+// should be skipped and if frame trigger is valid and if it's at start or stop/end of frame
 void AnalyzeTriggers(RecordBuffer& buffer, const TTTRRecordProcessor& processor, const PTUFileHeader& fh, int& frame_trg_type, int64_t& lines_to_skip)
 {
 	int64_t total_linestarts{}, total_linestops{};
@@ -302,7 +304,7 @@ int main(int argc, char** argv)
 	std::memset(histogram.get(), 0, sizeof(uint32_t) * max_hist_channels * fh.pix_x * fh.pix_y);
 	uint32_t maxDtime = 0; // max val in histogram
 
-	int64_t lastlinestart = -1, lastlinestop = -1, lineduration = -1, linecounter = 0 /*skip lines*/,
+	int64_t lastlinestart = -1, lastlinestop = -1, lineduration = -1, linecounter = 0,
 		totallines = 0, lines_to_skip = 0,
 		framecounter = 0, lastframetime = -1, linesprocessed = 0;
 	int frame_trg_type = FRAMETRG_UNKNOW;
@@ -322,7 +324,9 @@ int main(int argc, char** argv)
 	try {
 		AnalyzeTriggers(buffer, processor, fh, frame_trg_type, lines_to_skip);
 		linecounter = -lines_to_skip;
-
+		if (frame_trg_type != FRAMETRG_AT_START) {
+			framehasstarted = true;
+		}
 		for (int64_t recnum = 0; recnum < fh.num_records; ++recnum) {
 			auto TTTRRecord = buffer.pop();
 			if (processor.isSpecial(TTTRRecord))
@@ -356,17 +360,23 @@ int main(int argc, char** argv)
 					//++frametrgcount;
 					linecounter = 0; // this also signals that line should be processed
 				}
-				if ((trigger & TrgLineStartMask) != 0) {
-					lastlinestart = truensync;
+				if (framehasstarted && (trigger & TrgLineStartMask)) {
 					++totallines;
-					isrecordingline = true;
+					if (linecounter >= 0) {
+						isrecordingline = true;
+						lastlinestart = truensync;
+					}
+					else {
+						++linecounter;
+					}
 				}
-				else if ((trigger & TrgLineStopMask) != 0 && isrecordingline) { // line ended
+				else if ((trigger & TrgLineStopMask) && isrecordingline) { // line ended
 					isrecordingline = false;
 					lastlinestop = truensync;
 					lineduration = lastlinestop - lastlinestart;
+					assert(linecounter < fh.pix_y);
 					// process line data:
-					if ((framecounter >= first_frame) && (framecounter <= last_frame) && (linecounter >= 0) && (linecounter < fh.pix_y)) {
+					if ((framecounter >= first_frame) && (framecounter <= last_frame) && (linecounter < fh.pix_y)) {
 						++linesprocessed;
 						uint32_t* lp = histogram.get() + linecounter * max_hist_channels * fh.pix_x;
 						for (const auto& pt : pixeltimes) {
@@ -380,14 +390,16 @@ int main(int argc, char** argv)
 					}
 					pixeltimes.clear();
 					++linecounter;
-					if (linecounter == fh.pix_y - 1 + lines_to_skip) {
+					if (linecounter == fh.pix_y) {
 						++framecounter;
-						framehasstarted = false;
+
+						// for unknown frame trigger we assume we are always recording
+						if (frame_trg_type != FRAMETRG_UNKNOW) { framehasstarted = false; }
 						//if (isterminal) { // show progress indicator only in terminal sessions
 						//	const char SPINNER[] = "-\\|/";
 						//	std::cout << SPINNER[framecounter & 3] << "\r" << std::flush; // NOTE: this has no significant effect on performance (tested)
 						//}
-						linecounter = -lines_to_skip;  // skip lines
+						linecounter = -lines_to_skip;  // skip lines if necessary (in fact, this will also be set if frame trigger got caught)
 					}
 				}
 				if ((trigger & TrgFrameMask) && frame_trg_type == FRAMETRG_AT_STOP) {
