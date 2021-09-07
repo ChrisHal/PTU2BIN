@@ -60,23 +60,19 @@ int ExportIBWFile(std::ostream& os, uint32_t* histogram, int64_t pix_x,
 	short cksum = Checksum((short*)& bh, 0, sizeof(bh));
 	cksum = Checksum((short*)& wh, cksum, numbytes_wh);
 	bh.checksum = -cksum;
-
-	auto buffer = std::make_unique<uint32_t[]>(npnts);
-	auto p = buffer.get();
+	os.write((char*)&bh, sizeof(bh));
+	os.write((char*)&wh, numbytes_wh);
+	auto npnts_per_frame = pix_x * pix_y;
+	auto frame_buffer = std::make_unique<uint32_t[]>(npnts_per_frame);
 	// re-order data, to have time as the 3rd dimension
 	for (int64_t t = 0; t < max_export_channel; ++t) {
+		auto p = frame_buffer.get();
 		for (int64_t y = 0; y < pix_y; ++y) {
 			for (int64_t x = 0; x < pix_x; ++x) {
 				*p++ = histogram[t + x * num_hist_channels + y * num_hist_channels * pix_x];
 			}
 		}
+		os.write((char*)frame_buffer.get(), sizeof(uint32_t) * npnts_per_frame);
 	}
-	os.write((char*)& bh, sizeof(bh));
-	os.write((char*)& wh, numbytes_wh);
-	os.write((char*)buffer.get(), sizeof(uint32_t) * npnts);
-	if(!os.good()) {
-		return 1;
-	}
-	return 0;
+	return !os.good();
 }
-
