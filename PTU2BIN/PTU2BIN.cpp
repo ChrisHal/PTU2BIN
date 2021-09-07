@@ -1,4 +1,4 @@
-// Tool to convert 3T PTU file from PicoQuant SymphoTime
+﻿// Tool to convert 3T PTU file from PicoQuant SymphoTime
 // to PicoQuant BIN format (= pre-histogrammed data)
 //
 // As of now, only one specific format is supported.
@@ -395,17 +395,12 @@ int main(int argc, char** argv)
 
 						// for unknown frame trigger we assume we are always recording
 						if (frame_trg_type != FRAMETRG_UNKNOW) { framehasstarted = false; }
-						//if (isterminal) { // show progress indicator only in terminal sessions
-						//	const char SPINNER[] = "-\\|/";
-						//	std::cout << SPINNER[framecounter & 3] << "\r" << std::flush; // NOTE: this has no significant effect on performance (tested)
-						//}
 						linecounter = -lines_to_skip;  // skip lines if necessary (in fact, this will also be set if frame trigger got caught)
 					}
 				}
 				if ((trigger & TrgFrameMask) && frame_trg_type == FRAMETRG_AT_STOP) {
 					framehasstarted = true;
 					lastframetime = truensync;
-					//++frametrgcount;
 					linecounter = -lines_to_skip;
 				}
 				if (trigger & TrgFrameMask) {
@@ -417,7 +412,8 @@ int main(int argc, char** argv)
 			{
 				auto channel = processor.channel(TTTRRecord);
 				if (isrecordingline && (framecounter >= first_frame) && (framecounter <= last_frame) &&
-					(linecounter >= 0) && ((channelofinterest < 0) || (channel == channelofinterest))) {
+					((channelofinterest < 0) || (channel == channelofinterest))) {
+					assert(linecounter >= 0);
 					int64_t pixeltime = processor.truesync(TTTRRecord) - lastlinestart;
 					// store for later use:
 					pixeltimes.push_back({ processor.dtime(TTTRRecord), pixeltime });
