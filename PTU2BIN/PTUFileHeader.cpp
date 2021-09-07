@@ -140,8 +140,10 @@ bool PTUFileHeader::ProcessFile(std::istream& infile)
 				GlobRes = Int64ToDouble(tghd.TagValue); // in s
 				std::cout << "Sync intervall " << GlobRes << " s" << std::endl;
 			}
-			if (strcmp(tghd.Ident, ImgHdrPixResol) == 0)
+			if (strcmp(tghd.Ident, ImgHdrPixResol) == 0) {
 				PixResol = Int64ToDouble(tghd.TagValue); // in micrometer
+				std::cout << "Pixel resolution: " << PixResol << " um" << std::endl;
+			}
 			break;
 		case tyBool8:
 			if (strcmp(tghd.Ident, ImgHdrBiDirect) == 0) {
