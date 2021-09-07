@@ -19,6 +19,9 @@ Global
 		Debug|Any CPU = Debug|Any CPU
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
+		PerformanceTest|Any CPU = PerformanceTest|Any CPU
+		PerformanceTest|x64 = PerformanceTest|x64
+		PerformanceTest|x86 = PerformanceTest|x86
 		Release|Any CPU = Release|Any CPU
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
@@ -29,6 +32,11 @@ Global
 		{3E6A9EA6-1917-4A33-804A-AF048C93437A}.Debug|x64.Build.0 = Debug|x64
 		{3E6A9EA6-1917-4A33-804A-AF048C93437A}.Debug|x86.ActiveCfg = Debug|Win32
 		{3E6A9EA6-1917-4A33-804A-AF048C93437A}.Debug|x86.Build.0 = Debug|Win32
+		{3E6A9EA6-1917-4A33-804A-AF048C93437A}.PerformanceTest|Any CPU.ActiveCfg = PerformanceTest|Win32
+		{3E6A9EA6-1917-4A33-804A-AF048C93437A}.PerformanceTest|x64.ActiveCfg = PerformanceTest|x64
+		{3E6A9EA6-1917-4A33-804A-AF048C93437A}.PerformanceTest|x64.Build.0 = PerformanceTest|x64
+		{3E6A9EA6-1917-4A33-804A-AF048C93437A}.PerformanceTest|x86.ActiveCfg = PerformanceTest|Win32
+		{3E6A9EA6-1917-4A33-804A-AF048C93437A}.PerformanceTest|x86.Build.0 = PerformanceTest|Win32
 		{3E6A9EA6-1917-4A33-804A-AF048C93437A}.Release|Any CPU.ActiveCfg = Release|Win32
 		{3E6A9EA6-1917-4A33-804A-AF048C93437A}.Release|x64.ActiveCfg = Release|x64
 		{3E6A9EA6-1917-4A33-804A-AF048C93437A}.Release|x64.Build.0 = Release|x64
@@ -37,6 +45,9 @@ Global
 		{0A6C754D-B31F-4BCC-BCD6-807EAAC1D748}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{0A6C754D-B31F-4BCC-BCD6-807EAAC1D748}.Debug|x64.ActiveCfg = Debug|Any CPU
 		{0A6C754D-B31F-4BCC-BCD6-807EAAC1D748}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{0A6C754D-B31F-4BCC-BCD6-807EAAC1D748}.PerformanceTest|Any CPU.ActiveCfg = Release|Any CPU
+		{0A6C754D-B31F-4BCC-BCD6-807EAAC1D748}.PerformanceTest|x64.ActiveCfg = Release|Any CPU
+		{0A6C754D-B31F-4BCC-BCD6-807EAAC1D748}.PerformanceTest|x86.ActiveCfg = Release|Any CPU
 		{0A6C754D-B31F-4BCC-BCD6-807EAAC1D748}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0A6C754D-B31F-4BCC-BCD6-807EAAC1D748}.Release|x64.ActiveCfg = Release|Any CPU
 		{0A6C754D-B31F-4BCC-BCD6-807EAAC1D748}.Release|x86.ActiveCfg = Release|Any CPU

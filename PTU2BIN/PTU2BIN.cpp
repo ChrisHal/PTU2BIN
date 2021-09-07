@@ -47,9 +47,7 @@ bool my_isatty()
 
 //#define	DOPERFORMANCEANALYSIS
 #ifdef DOPERFORMANCEANALYSIS
-#include <windows.h>
-#undef max
-#undef min
+#include <chrono>
 #endif // DOPERFORMANCEANALYSIS
 
 #pragma pack(8)
@@ -296,7 +294,7 @@ int main(int argc, char** argv)
 		int64_t pixeltime;
 	};
 	std::vector<PixelTime> pixeltimes;
-	pixeltimes.reserve(32768);
+	pixeltimes.reserve(32768); // Perf. test shows only small effect of this
 
 	// space for histogramm data
 	size_t max_hist_channels = std::max(512, num_useful_histo_ch); // number of histogramm channels, same as max Dtime?
@@ -312,9 +310,7 @@ int main(int argc, char** argv)
 
 
 #ifdef DOPERFORMANCEANALYSIS
-	__int64 pcFreq = 0, pcStart = 0, pcStop = 0;
-	QueryPerformanceFrequency((LARGE_INTEGER*)& pcFreq);
-	QueryPerformanceCounter((LARGE_INTEGER*)& pcStart);
+	auto start_time = std::chrono::steady_clock::now();
 #endif
 	// prepare input buffer
 	RecordBuffer buffer(infile, fh.num_records);
@@ -429,10 +425,12 @@ int main(int argc, char** argv)
 		exit(EXIT_FAILURE);
 	}
 #ifdef DOPERFORMANCEANALYSIS
-	QueryPerformanceCounter((LARGE_INTEGER*)& pcStop);
-	double duration = double(pcStop - pcStart) / double(pcFreq);
-	std::cout << "Time for execution: " << duration << " s (" << duration / num_records
+	auto end_time = std::chrono::steady_clock::now();
+	std::chrono::duration<double> diff = end_time - start_time;
+	auto duration = diff.count();
+	std::cout << "PERFT-TEST: Time for execution: " << duration << " s (" << duration / fh.num_records
 		<< " s per record)" << std::endl;
+	std::cout << pixeltimes.capacity() << std::endl;
 #endif
 	infile.close();
 	std::cout << "first processed frame " << first_frame
