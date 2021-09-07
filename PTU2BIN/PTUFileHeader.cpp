@@ -79,7 +79,7 @@ bool PTUFileHeader::ProcessFile(std::istream& infile)
 		std::cerr << "error reading infile" << std::endl;
 		return false;
 	}
-	std::cout << "File version: " << Version << std::endl;
+	std::cout << "File version: " << Version.c_str() << std::endl;
 	unsigned int tagcount = 0;
 	////////////
 	// read tags:
@@ -167,7 +167,7 @@ bool PTUFileHeader::ProcessFile(std::istream& infile)
 			if (strcmp(tghd.Ident, HWType) == 0) {
 				std::string hw_type(tghd.TagValue, '\0');
 				infile.read(hw_type.data(), tghd.TagValue);
-				std::cout << "HW type: " << hw_type << std::endl;
+				std::cout << "HW type: " << hw_type.c_str() << std::endl;
 			}
 			else {
 				infile.seekg(tghd.TagValue, std::ios::cur);
