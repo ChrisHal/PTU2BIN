@@ -411,7 +411,7 @@ int main(int argc, char** argv)
 					pixeltimes.push_back({ processor.dtime(TTTRRecord), pixeltime });
 				}
 			}
-			if (isterminal && (recnum & 0xffff)==0) { // show progress indicator only in terminal sessions
+			if (isterminal && (recnum & 0x7ffff) == 0) { // show progress indicator only in terminal sessions
 				std::cout << 100 * recnum / fh.num_records << "% done\r" << std::flush; // NOTE: this has no significant effect on performance (tested)
 			}
 		}
