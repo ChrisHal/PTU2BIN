@@ -26,7 +26,7 @@ public:
 	bool isT2mode() const { return isT2; };
 	bool processOverflow(uint32_t record); // true, if record was overflow (record must be special!))
 	void resetOverflow() { oflcorrection = 0; };
-	uint32_t nsync(uint32_t record) const { return record & nsyncmask; };
+	int nsync(uint32_t record) const { return int(record & nsyncmask); };
 	int64_t truesync(uint32_t record) const { return oflcorrection + nsync(record); };
 	uint32_t dtime(uint32_t record) const {
 #ifndef NDEBUG

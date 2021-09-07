@@ -118,10 +118,19 @@ void AnalyzeTriggers(RecordBuffer& buffer, const TTTRRecordProcessor& processor,
 			if (!buffer.noMoreData()) {
 				// test if next record is also a marker event
 				auto next_record = buffer.peek();
-				if (processor.isMarker(next_record) &&
-					processor.nsync(next_record) == processor.nsync(record)) {
+				if (processor.isMarker(next_record)) {
+					// we merge here independent of time to next trigger! Might cause problems.
 					next_record = buffer.pop();
 					marker |= processor.markers(next_record);
+
+#ifndef NDEBUG
+					if (processor.nsync(next_record) != processor.nsync(record))
+					{
+						auto DT = processor.nsync(next_record) - processor.nsync(record);
+						std::cout << "WARNING: merge with DT = " << DT << " (" <<
+							DT * fh.GlobRes << " s)" << std::endl;
+					}
+#endif // !NDEBUG
 				}
 			}
 			//if (marker & TrgFrameMask) {
@@ -137,7 +146,7 @@ void AnalyzeTriggers(RecordBuffer& buffer, const TTTRRecordProcessor& processor,
 				if (total_linestarts != total_linestops) {
 					std::cout << "frame trigger out of sequence" << std::endl;
 				}
-				if (total_linestops == 0) {
+				if (total_linestops == 0 && frame_trg_type != FRAMETRG_AT_START) {
 					frame_trg_type = FRAMETRG_AT_START;
 					lines_to_skip = 0;
 #ifndef NDEBUG
@@ -145,13 +154,15 @@ void AnalyzeTriggers(RecordBuffer& buffer, const TTTRRecordProcessor& processor,
 #endif // !NDEBUG
 					break;
 				}
-				if (frame_trg_type != FRAMETRG_AT_START) {
+				if (frame_trg_type != FRAMETRG_AT_START && frame_trg_type!=FRAMETRG_AT_STOP) {
 					frame_trg_type = FRAMETRG_AT_STOP;
 					lines_to_skip = total_linestarts - fh.pix_y;
 #ifndef NDEBUG
 					std::cout << "frame trigger at end, lines to skip " << lines_to_skip << std::endl;
 #endif // !NDEBUG
+#ifdef NDEBUG
 					break;
+#endif // NDEBUG
 				}
 			}
 		}
@@ -272,6 +283,11 @@ int main(int argc, char** argv)
 		std::cerr << "Sorry, T2 mode not supported (working on it)." << std::endl;
 		exit(EXIT_FAILURE);
 	}
+	constexpr double MAX_TRIGGER_DIFF_SEC = 120e-6;
+	int max_trig_diff = 0;
+	if (fh.GlobRes > 1e-9) {
+		max_trig_diff = int(MAX_TRIGGER_DIFF_SEC / fh.GlobRes);
+	}
 	int num_useful_histo_ch = int(std::ceil(fh.GlobRes / fh.Resolution)) + 1; // TODO: check if ok for T2 data
 	std::cout << "estimated number of useful histogram channels: " << num_useful_histo_ch << std::endl;
 	std::cout << "total # records in file: " << fh.num_records << std::endl;
@@ -336,7 +352,7 @@ int main(int argc, char** argv)
 					// test if next record is also a marker event
 					auto next_record = buffer.peek();
 					if (processor.isMarker(next_record) &&
-						processor.nsync(next_record) == processor.nsync(TTTRRecord)) {
+						(processor.nsync(next_record) - processor.nsync(TTTRRecord) <= max_trig_diff)) {
 						next_record = buffer.pop();
 						++recnum;
 						trigger |= processor.markers(next_record); // merge marker events
@@ -437,6 +453,11 @@ int main(int argc, char** argv)
 		<< " \ntotal frames " << framecounter << " (processed: " << linesprocessed/fh.pix_y
 		<< ")\ntotal lines " << totallines << " (processed: " << linesprocessed
 		<< ")" << std::endl;
+
+	std::cout << "max Dtime " << maxDtime << std::endl;
+	double microsec_lastpixeltime = double(lastlinestop - lastlinestart) * fh.GlobRes * 1.0e6 / double(fh.pix_x);
+	// round dwell time to nearest 0.1 micros:
+	std::cout << "pixel dwell time " << std::round(microsec_lastpixeltime * 10.0) / 10.0 << " microseconds" << std::endl;
 	if (frametrgcount != framecounter) {
 		std::cout << "WARNING: unexpected number of frame triggers in file (" << frametrgcount << ")" << std::endl;
 	}
@@ -448,10 +469,7 @@ int main(int argc, char** argv)
 #endif // !NDEBUG
 
 	}
-	std::cout << "max Dtime " << maxDtime << std::endl;
-	double microsec_lastpixeltime = double(lastlinestop - lastlinestart) * fh.GlobRes * 1.0e6 / double(fh.pix_x);
-	// round dwell time to nearest 0.1 micros:
-	std::cout << "pixel dwell time " << std::round(microsec_lastpixeltime * 10.0) / 10.0 << " microseconds" << std::endl;
+
 	++maxDtime; // need to store one datapoint more than max Dtime
 
 	// decide on the file format for export depending on the file extension given in the command line
