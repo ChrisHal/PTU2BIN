@@ -11,6 +11,8 @@
 *.sln.docstates
 **/test1.bin
 **/test1.ptu
+PTU2BIN/external/*.hpp
+PTU2BIN_build/
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs

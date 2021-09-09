@@ -22,23 +22,32 @@ convertPTUs.py - A Python script that batch-converts all ptu files in the curren
 BUILDING
 Dependencies:
 cxxopts.hpp (available at https://github.com/jarro2783/cxxopts.git)
-This must be in your include path.
+Place this in the "PTU2BIN/external/" directory.
 PTU2BIN was build using version 2.2.0 of cxxopts, newer versions might contain
 breaking changes.
 
 Only the PTU2BIN executable needs to be build. The python script can be used "as is".
 Since in normal configuration only standard C++ is used building should work on
 most systems. Instructions for Windows and Linux are provided:
-On Windows: The preferred solution is to use VisualStudio and build using
+On Windows:
+The preferred solution is to use VisualStudio and build using
   the VisualStudio solution file "PTU2BIN.sln".
-On Linux: You will need a C++ compiler installed. We assume that the GNU compiler
-  is used. Then "g++ -O2 -o  PTU2BIN PTU2BIN.cpp export_igor_ibw.cpp" should be
-  sufficient to build the executable.
+On Linux (should also work on other platforms):
+The build process uses cmake. You will need a C++ compiler installed.
+In topdir, create a build directory:
+mkdir PTU2BIN_build
+Change to that directroy:
+cd PTU2BIN_build
+Execute these commands (for Release type build):
+cmake -DCMAKE_BUILD_TYPE=Release ../PTU2BIN
+cmake --build .
+
+
 
 INSTALLING
 Make sure that Python3.5 (or higher) is installed on your system.
 Windows: The most convenient option is to place cenvertPTUs.py and PTU2BIN.exe in 
-  a common directory. The files you want to convert should be in thw same directory
+  a common directory. The files you want to convert should be in the same directory
   or in its sub-directories.
 Linux: Copy the executable PTU2BIN to a directory in your PATH,
   e.d. "/usr/local/bin/".
