@@ -64,6 +64,7 @@ jobs:
     #    uses a compiled language
 
     - run: |
+       mkdir ./PTU2BIN_build
        cd ./PTU2BIN_build
        cmake ../PTU2BIN
        cmake --build .
