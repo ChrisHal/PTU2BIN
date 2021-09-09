@@ -30,20 +30,20 @@ is a command-line switch to send the output of PTU2BIN to the terminal instead.
 
 ## BUILDING
 
-Dependencies:
-cxxopts.hpp (available at https://github.com/jarro2783/cxxopts.git)
+Only the PTU2BIN executable needs to be build. The python script can be used "as is".
+Only standard C++17 is used, so building should work on
+most systems. Instructions for Windows and Linux are provided.
+
+**External dependencies:**
+`cxxopts.hpp` (available at https://github.com/jarro2783/cxxopts.git).
 Place this in the "PTU2BIN/external/" directory.
 PTU2BIN was build using version 2.2.0 of cxxopts, newer versions might contain
 breaking changes.
 
-Only the PTU2BIN executable needs to be build. The python script can be used "as is".
-Since in normal configuration only standard C++ is used building should work on
-most systems. Instructions for Windows and Linux are provided:
-
 ### Windows
 
 The recommended way is to use VisualStudio and build using
-the VisualStudio solution file "PTU2BIN.sln". Currently, VisualStuio 2019 ist used to
+the VisualStudio solution file `PTU2BIN.sln`. Currently, VisualStudio 2019 ist used to
 develope and test PTU2BIN.
 
 ### Linux
@@ -52,7 +52,7 @@ develope and test PTU2BIN.
 
 The build process uses `cmake`. You will need a C++ compiler installed.
 
-In topdir, create a build directory (this will sit parallel to "PTU2BIN" in the top directory,
+In top directory, create a build directory (this will sit parallel to "PTU2BIN" in the top directory,
 which might also be called "PTU2BIN"):
 
 ``mkdir PTU2BIN_build``
