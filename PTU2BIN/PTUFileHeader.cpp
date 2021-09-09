@@ -1,4 +1,5 @@
 #include <iostream>
+#include <cstring>
 #include "PTUFileHeader.h"
 
 // some important Tag Idents (TTagHead.Ident)

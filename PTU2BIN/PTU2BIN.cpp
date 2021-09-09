@@ -26,7 +26,7 @@
 #include <cmath>
 #define __STDC_WANT_LIB_EXT1__
 #include <ctime>
-#include <cxxopts.hpp>
+#include "external/cxxopts.hpp"
 #include "PTUFileHeader.h"
 #include "TTTRRecordProcessor.h"
 #include "RecordBuffer.h"

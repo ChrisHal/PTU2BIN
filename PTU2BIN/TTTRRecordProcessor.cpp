@@ -48,8 +48,13 @@ PHT2_OverflowPeriod = 210698240;
 // We should be able to work with HydraHarp, MultiHarp and TimeHarp260 T3 Format
 template<std::size_t N> bool RecordTypeIsSupported(int64_t recordtype, const std::array<int64_t,N>& supported_record_types)
 {
-	
-	return std::find(supported_record_types.begin(), supported_record_types.end(), recordtype) != supported_record_types.end();
+	// g++ doen't like this (bug in g++?):
+	//return std::find(supported_record_types.begin(), supported_record_types.end(), recordtype) != supported_record_types.end();
+	// Therefore, this workaround:
+	for (const auto& e : supported_record_types) {
+		if (e == recordtype) { return true; }
+	}
+	return false;
 }
 
 
