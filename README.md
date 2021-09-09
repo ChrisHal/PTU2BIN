@@ -80,8 +80,8 @@ The most convenient option is to place `convertPTUs.py` and `PTU2BIN.exe` in
 Make the Python script executable (using command `chmod +x convertPTUs.py`).
 
 Copy the executable `PTU2BIN` and the Python script `convertPTUs.py` (found in directory
-`convertPTUs`) to a directory in your PATH,
-e.g. `/usr/local/bin/`.
+`convertPTUs`) to a directory in your PATH e.g.`/usr/local/bin/`:  
+`sudo install PTU2BIN /usr/local/bin/`.
 
 ## USAGE
 
