@@ -6,10 +6,10 @@ Copyright (c) 2021 Christian R. Halaszovich
 
 ## Introduction
 Tools to convert PicoQuant PTU files (as written by e.g.
-PicoQuant's SymphoTime64) to BIN files or IgorPro binary wave files (IBW)
+PicoQuant's SymPhoTime 64) to BIN files or IgorPro binary wave files (IBW)
 containing pre-histogrammed data.
 
-This works for T3-mode FLIM data in. The the file must have been recorded in "Image" mode,
+This works for T3-mode FLIM data in. The file must have been recorded in "Image" mode,
 "Point" or "Line" modes are not supported.
 
 It has only been tested with TimeHarp260P and PicoHarp data
@@ -18,7 +18,7 @@ for T2 mode is planned.
 
 There are two tools provided:
 
-* `PTU2BIN` - This is the conversion tool that can be used to convert single PTU files.
+* `PTU2BIN` - This is the conversion tool that is used to convert individual PTU files.
 (The original file is preserved, of course.) Additionally, some useful metadata is
 extracted from the PTU file.
 
