@@ -8,6 +8,8 @@ if(DOPERFORMANCEANALYSIS)
 add_compile_definitions(DOPERFORMANCEANALYSIS)
 endif()
 # add the executable
-add_executable(PTU2BIN PTU2BIN.cpp export_igor_ibw.cpp export_igor_ibw.h PTUFileHeader.cpp PTUFileHEader.h RecordBuffer.h TTTRRecordProcessor.cpp TTTRRecordProcessor.h external/cxxopts.hpp)
+add_executable(PTU2BIN)
+target_sources(PTU2BIN PTU2BIN.cpp export_igor_ibw.cpp export_igor_ibw.h PTUFileHeader.cpp PTUFileHEader.h RecordBuffer.h TTTRRecordProcessor.cpp TTTRRecordProcessor.h external/cxxopts.hpp)
+
 
 
