@@ -444,7 +444,7 @@ int main(int argc, char** argv)
 	auto end_time = std::chrono::steady_clock::now();
 	std::chrono::duration<double> diff = end_time - start_time;
 	auto duration = diff.count();
-	std::cout << "PERFT-TEST: Time for execution: " << duration << " s (" << duration / fh.num_records
+	std::cout << "PERF-TEST: Time for execution: " << duration << " s (" << duration / fh.num_records
 		<< " s per record)" << std::endl;
 	std::cout << pixeltimes.capacity() << std::endl;
 #endif
