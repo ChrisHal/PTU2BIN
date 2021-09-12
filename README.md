@@ -62,7 +62,7 @@ Change to that directroy:
 ``cd PTU2BIN_build``
 
 Execute these commands (for "Release" type build):  
-``cmake -DCMAKE_BUILD_TYPE=Release ../PTU2BIN``  
+``cmake -DCMAKE_BUILD_TYPE=Release ..``  
 ``cmake --build .``
 
 
@@ -77,11 +77,9 @@ The most convenient option is to place `convertPTUs.py` and `PTU2BIN.exe` in
 
 ### Linux
 
-Make the Python script executable (using command `chmod +x convertPTUs.py`).
-
-Copy the executable `PTU2BIN` and the Python script `convertPTUs.py` (found in directory
-`convertPTUs`) to a directory in your PATH e.g.`/usr/local/bin/`:  
-`sudo install PTU2BIN /usr/local/bin/`
+The executables can be installed in the default path (usually '/usr/local/bin')
+with this command (executed in the build directory):
+`cmake --install .`
 
 ## USAGE
 
