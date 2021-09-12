@@ -77,7 +77,7 @@ The most convenient option is to place `convertPTUs.py` and `PTU2BIN.exe` in
 
 ### Linux
 
-The executables can be installed in the default path (usually '/usr/local/bin')
+The executables will be installed in the default path (usually '/usr/local/bin')
 with this command (executed in the build directory):  
 `sudo cmake --install .`
 
@@ -93,7 +93,7 @@ sub-directories, starting from the location of `convertPTUs.py` will be converte
 Alternatively, if you installed in your `PATH`, you can use the method described in the next paragraph.
 
 **Linux**:
-In terminal, change to the directory where convertPTUs.py is located.
+In terminal, change to the directory where the PTU files to be converted reside.
 Start the conversion using the command `convertPTUs.py`.
 
 
@@ -129,4 +129,6 @@ To learn about additional options:
 `PTU2BIN --help`
 
 
+![MS build](https://github.com/ChrisHal/PTU2BIN/blob/master/.github/workflows/msbuild.yml/badge.svg)
 
+![Linux build](https://github.com/ChrisHal/PTU2BIN/blob/master/.github/workflows/cmake.yml/badge.svg)
