@@ -315,7 +315,6 @@ int main(int argc, char** argv)
 	// space for histogramm data
 	size_t max_hist_channels = std::max(512, num_useful_histo_ch); // number of histogramm channels, same as max Dtime?
 	auto histogram = std::make_unique<uint32_t[]>(max_hist_channels * fh.pix_x * fh.pix_y);
-	std::memset(histogram.get(), 0, sizeof(uint32_t) * max_hist_channels * fh.pix_x * fh.pix_y);
 	uint32_t maxDtime = 0; // max val in histogram
 
 	int64_t lastlinestart = -1, lastlinestop = -1, lineduration = -1, linecounter = 0,
