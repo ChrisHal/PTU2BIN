@@ -181,7 +181,7 @@ cxxopts::ParseResult parse(int argc, char** argv, std::string& infile, std::stri
 			("f,first", "first frame (default 0)", cxxopts::value<int64_t>(),"<# 1st frame>")
 			("l,last", "last frame (default: last in file)", cxxopts::value<int64_t>(), "<# last frame>")
 			("ignore-frame-trigger", "set if frame trigger is unreliable")
-			("lines-to-skip", "lines to skip at start of frame", cxxopts::value<int64_t>(), "<# frames>")
+			("lines-to-skip", "lines to skip at start of frame", cxxopts::value<int64_t>(), "<#>")
 			("v,version", "print version")
 			/*("positional",
 				"Positional arguments: these are the arguments that are entered "
