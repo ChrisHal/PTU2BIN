@@ -129,6 +129,6 @@ To learn about additional options:
 `PTU2BIN --help`
 
 
-![MS build](https://github.com/ChrisHal/PTU2BIN/blob/master/.github/workflows/msbuild.yml/badge.svg)
 
-![Linux build](https://github.com/ChrisHal/PTU2BIN/blob/master/.github/workflows/cmake.yml/badge.svg)
+![MS build](https://github.com/ChrisHal/PTU2BIN/actions/workflows/msbuild.yml/badge.svg)
+![Linux build](https://github.com/ChrisHal/PTU2BIN/actions/workflows/cmake.yml/badge.svg)
