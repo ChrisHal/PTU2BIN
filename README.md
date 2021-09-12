@@ -78,7 +78,7 @@ The most convenient option is to place `convertPTUs.py` and `PTU2BIN.exe` in
 ### Linux
 
 The executables can be installed in the default path (usually '/usr/local/bin')
-with this command (executed in the build directory):
+with this command (executed in the build directory):  
 `cmake --install .`
 
 ## USAGE
