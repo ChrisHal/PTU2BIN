@@ -169,7 +169,7 @@ void AnalyzeTriggers(RecordBuffer& buffer, const TTTRRecordProcessor& processor,
 }
 
 cxxopts::ParseResult parse(int argc, char** argv, std::string& infile, std::string& outfile, int& channelofinterest,
-	int64_t& first_frame, int64_t& last_frame)
+	int64_t& first_frame, int64_t& last_frame, bool& ignore_frame_trigger, int64_t& lines_to_skip)
 {
 	try {
 		cxxopts::Options options(APP_NAME, " - convert PTU to BIN or IBW");
@@ -180,6 +180,8 @@ cxxopts::ParseResult parse(int argc, char** argv, std::string& infile, std::stri
 			("c,channel","detectorchannel (<=0: all, default: 2)",cxxopts::value<int>(),"<channel#>")
 			("f,first", "first frame (default 0)", cxxopts::value<int64_t>(),"<# 1st frame>")
 			("l,last", "last frame (default: last in file)", cxxopts::value<int64_t>(), "<# last frame>")
+			("ignore-frame-trigger", "set if frame trigger is unreliable")
+			("lines-to-skip", "lines to skip at start of frame", cxxopts::value<int64_t>(), "<# frames>")
 			("v,version", "print version")
 			/*("positional",
 				"Positional arguments: these are the arguments that are entered "
@@ -214,6 +216,15 @@ cxxopts::ParseResult parse(int argc, char** argv, std::string& infile, std::stri
 		if (result.count("last")) {
 			last_frame = result["last"].as<int64_t>();
 		}
+		ignore_frame_trigger = result.count("ignore-frame-trigger");
+		if (result.count("lines-to-skip")) {
+			lines_to_skip = result["lines-to-skip"].as<int64_t>();
+			if (!ignore_frame_trigger) {
+				std::wcout << "NOTICE: option 'lines-to-skip' has only an effect in combination with ignore-frame-trigger"
+					<< std::endl;
+			}
+		}
+
 		if (argc > 1) {
 			std::cerr << "Warning: more arguments given than expected. " << std::endl;
 		}
@@ -229,8 +240,10 @@ int main(int argc, char** argv)
 {
 	std::string infilename, outfilename;
 	int channelofinterest = 1;
-	int64_t first_frame = 0, last_frame = std::numeric_limits<int64_t>::max();
-	auto parsedargs = parse(argc, argv, infilename, outfilename, channelofinterest, first_frame, last_frame);
+	int64_t first_frame = 0, last_frame = std::numeric_limits<int64_t>::max(), lines_to_skip = 0;
+	bool ignore_frame_trigger{ false };
+	auto parsedargs = parse(argc, argv, infilename, outfilename, channelofinterest, first_frame, last_frame,
+		ignore_frame_trigger, lines_to_skip);
 	// check if we are running from a terminal
 #ifdef DOPERFORMANCEANALYSIS
 	bool isterminal = false;
@@ -324,7 +337,7 @@ int main(int argc, char** argv)
 	uint32_t maxDtime = 0; // max val in histogram
 
 	int64_t lastlinestart = -1, lastlinestop = -1, lineduration = -1, linecounter = 0,
-		totallines = 0, lines_to_skip = 0,
+		totallines = 0,
 		framecounter = 0, lastframetime = -1, linesprocessed = 0;
 	int frame_trg_type = FRAMETRG_UNKNOW;
 	int64_t frametrgcount = 0; // as a control we count the frame triggers
@@ -339,7 +352,9 @@ int main(int argc, char** argv)
 	//////////////
 	// start processing of records
 	try {
-		AnalyzeTriggers(buffer, processor, fh, frame_trg_type, lines_to_skip);
+		if (!ignore_frame_trigger) {
+			AnalyzeTriggers(buffer, processor, fh, frame_trg_type, lines_to_skip);
+		}
 		linecounter = -lines_to_skip;
 		if (frame_trg_type != FRAMETRG_AT_START) {
 			framehasstarted = true;
