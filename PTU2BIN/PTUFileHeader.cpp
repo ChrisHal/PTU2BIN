@@ -61,10 +61,7 @@ double Int64ToDouble(int64_t tagval)
 
 bool PTUFileHeader::ProcessFile(std::istream& infile)
 {
-	if (!infile.good()) {
-		std::cerr << "error opening infile" << std::endl;
-		return false;
-	}	// first, test if it is a valid file
+	// first, test if it is a valid file
 	char magic[8];
 	infile.read(magic, sizeof(magic));
 	if (!infile.good()) {

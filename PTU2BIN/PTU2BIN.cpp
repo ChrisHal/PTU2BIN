@@ -1,8 +1,6 @@
 ﻿// Tool to convert 3T PTU file from PicoQuant SymphoTime
 // to PicoQuant BIN format (= pre-histogrammed data)
 //
-// As of now, only one specific format is supported.
-//
 // (c) 2021 Christian R. Halaszovich
 // (See LICENSE.txt for licensing information.)
 // 
@@ -240,10 +238,17 @@ int main(int argc, char** argv)
 	bool isterminal = my_isatty();
 #endif
 	std::cout << "infile: " << infilename << "\noutfile: " << outfilename << std::endl;
-	std::ifstream infile(infilename.c_str(), std::ios::in | std::ios::binary);
+	if (last_frame < first_frame) {
+		std::cout << "WARNING: last frame < first frame, no frames will be processed"
+			<< std::endl;
+	}
+	std::ifstream infile(infilename, std::ios::in | std::ios::binary);
 	PTUFileHeader fh;
 	TTTRRecordProcessor processor;
-
+	if (!infile.good()) {
+		std::cerr << "error opening infile" << std::endl;
+		exit(EXIT_FAILURE);
+	}
 	if (!fh.ProcessFile(infile)) {
 		std::cerr << "error processing file headers" << std::endl;
 		exit(EXIT_FAILURE);
@@ -271,7 +276,8 @@ int main(int argc, char** argv)
 			" Every 2nd line will be inverted." << std::endl;
 	}
 	if (fh.sin_correction != 0) {
-		std::cout << "WARNING: sinosoidal scan not supported. y-axis will be distorted." << std::endl;
+		std::cout << "WARNING: sinosoidal scan not supported. y-axis will be distorted.\n" <<
+			"NOTE: sin_correction is " << fh.sin_correction << std::endl;
 	}
 	//
 	// we are done checking the file header, now let's init processing
