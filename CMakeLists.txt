@@ -2,6 +2,13 @@
 
 project ("PTU2BIN")
 option(DOPERFORMANCEANALYSIS "enable timing of execution time" OFF)
-
+if(DEFINED ENV{USERPROFILE})
+option(MS_PERUSERINSTALL "per-user installation" ON)
+endif()
 add_subdirectory ("PTU2BIN")
 add_subdirectory ("convertPTUs")
+if(MS_PERUSERINSTALL)
+STRING(REGEX REPLACE "\\\\" "/" TMP_DIR_1 $ENV{USERPROFILE})
+set(CMAKE_INSTALL_PREFIX ${TMP_DIR_1})
+message(STATUS "New install prefix (per-user installation): " ${CMAKE_INSTALL_PREFIX})
+endif()
