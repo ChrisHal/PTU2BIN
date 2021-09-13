@@ -70,7 +70,7 @@ Execute these commands (for "Release" type build):
 
 ## INSTALLATION
 
-Make sure that Python3.5 (or higher) is installed on your system.
+Make sure that Python3.7 (or higher) is installed on your system.
 
 ### Windows
 The most convenient option is to place `convertPTUs.py` and `PTU2BIN.exe` in 
