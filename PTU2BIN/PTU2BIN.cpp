@@ -289,8 +289,8 @@ int main(int argc, char** argv)
 			" Every 2nd line will be inverted." << std::endl;
 	}
 	if (fh.sin_correction != 0) {
-		std::cout << "WARNING: sinosoidal scan not supported. y-axis will be distorted.\n" <<
-			"NOTE: sin_correction is " << fh.sin_correction << std::endl;
+		std::cout << "WARNING: sinusoidal scan not supported. y-axis will be distorted.\n" <<
+			"NOTE: ImgHdr_SinCorrection is " << fh.sin_correction << '%' << std::endl;
 	}
 	//
 	// we are done checking the file header, now let's init processing
