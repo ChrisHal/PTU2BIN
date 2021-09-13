@@ -8,6 +8,8 @@
 // (see their GitHub repo)
 //
 
+#define _USE_MATH_DEFINES
+#include <cmath>
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -21,7 +23,7 @@
 #include <cstring>
 #include <cassert>
 #include <cstdio>
-#include <cmath>
+//#include <numbers>
 #define __STDC_WANT_LIB_EXT1__
 #include <ctime>
 #include "external/cxxopts.hpp"
@@ -284,12 +286,8 @@ int main(int argc, char** argv)
 		std::cerr << "ERROR: some data missing from PTU file header" << std::endl;
 		exit(EXIT_FAILURE);
 	}
-	if (fh.is_bidirect) {
-		std::cout << "WARNING: this is a bi-directional scan." <<
-			" Every 2nd line will be inverted." << std::endl;
-	}
 	if (fh.sin_correction != 0) {
-		std::cout << "WARNING: sinusoidal scan not supported. y-axis will be distorted.\n" <<
+		std::cout << 
 			"NOTE: ImgHdr_SinCorrection is " << fh.sin_correction << '%' << std::endl;
 	}
 	//
@@ -341,7 +339,10 @@ int main(int argc, char** argv)
 		framecounter = 0, lastframetime = -1, linesprocessed = 0;
 	int frame_trg_type = FRAMETRG_UNKNOW;
 	int64_t frametrgcount = 0; // as a control we count the frame triggers
-
+	double sin_corr_scale{};
+	if (fh.sin_correction != 0) {
+		sin_corr_scale = std::sin(M_PI * fh.sin_correction / 200.0);
+	}
 
 #ifdef DOPERFORMANCEANALYSIS
 	auto start_time = std::chrono::steady_clock::now();
@@ -412,8 +413,22 @@ int main(int argc, char** argv)
 						++linesprocessed;
 						uint32_t* lp = histogram.get() + linecounter * max_hist_channels * fh.pix_x;
 						for (const auto& pt : pixeltimes) {
-							int64_t x = std::max(int64_t(0), std::min(((int64_t(pt.pixeltime) * fh.pix_x) / lineduration), fh.pix_x - 1));
-							unsigned int dt = pt.dtime;
+							int64_t x;
+							if (fh.sin_correction == 0) {
+								x = int64_t(pt.pixeltime) * fh.pix_x / lineduration;
+							}
+							else {
+								// apply sinusoidal correction
+								// I hope this is correct, since info from on this is scarce
+								double t_n = 2.0 * pt.pixeltime / lineduration - 1.0;
+								double phi = t_n * M_PI * fh.sin_correction / 200.0;
+								x = int64_t((std::sin(phi) / sin_corr_scale + 1.0) * fh.pix_x / 2.0);
+							}
+							x = std::max(int64_t(0), std::min(x, fh.pix_x - 1));
+							if (fh.is_bidirect && bool(linecounter & 1)) {
+								x = fh.pix_x - 1 - x;
+							}
+							auto dt = pt.dtime;
 							if (dt < max_hist_channels) {
 								++lp[x * max_hist_channels + dt];
 								maxDtime = std::max(dt, maxDtime);
