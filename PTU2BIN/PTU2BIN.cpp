@@ -490,7 +490,8 @@ int main(int argc, char** argv)
 		<< ")" << std::endl;
 
 	std::cout << "max Dtime " << maxDtime << std::endl;
-	double microsec_lastpixeltime = double(lastlinestop - lastlinestart) * fh.GlobRes * 1.0e6 / double(fh.pix_x);
+	assert(lineduration > 0);
+	double microsec_lastpixeltime = double(lineduration) * fh.GlobRes * 1.0e6 / double(fh.pix_x);
 	// round dwell time to nearest 0.1 micros:
 	std::cout << "pixel dwell time " << std::round(microsec_lastpixeltime * 10.0) / 10.0 << " microseconds" << std::endl;
 	if (frametrgcount != framecounter) {
