@@ -9,7 +9,7 @@ Tools to convert PicoQuant PTU files (as written by e.g.
 PicoQuant's SymPhoTime 64) to BIN files or IgorPro binary wave files (IBW)
 containing pre-histogrammed data.
 
-This works for T3-mode FLIM data in. The file must have been recorded in "Image" mode,
+This works for T3-mode FLIM data. The file must have been recorded in "Image" mode,
 "Point" or "Line" modes are not supported.
 
 It has only been tested with TimeHarp260P and PicoHarp data
@@ -36,8 +36,8 @@ most systems. Instructions for Windows and Linux are provided.
 
 **External dependencies:**
 `cxxopts.hpp` (available at https://github.com/jarro2783/cxxopts.git).
-Place this in the "PTU2BIN/external/" directory.
-PTU2BIN was build using version 2.2.0 of cxxopts, newer versions might contain
+A copy of this file has been placed in the "PTU2BIN/external/" directory.
+PTU2BIN was build using version 2.2.1 of cxxopts, newer versions might contain
 breaking changes.
 
 ### Windows
@@ -46,25 +46,27 @@ The recommended way is to use VisualStudio and build using
 the VisualStudio solution file `PTU2BIN.sln`. Currently, VisualStudio 2019 ist used to
 develope and test PTU2BIN.
 
+Alternatively, the you can use `cmake`. Just follow the instructions given for the **Linux** build.
+
 ### Linux
 
-(This should also work on other platforms.)
-
 The build process uses `cmake`. You will need a C++ compiler installed.
+(This should also work on other platforms, including Windows.)
+To install from scratch, first clone the repository:
 
-In top directory, create a build directory (this will sit parallel to "PTU2BIN" in the top directory,
-which might also be called "PTU2BIN"):
+`git clone https://github.com/ChrisHal/PTU2BIN.git`
+
+Create the build directory:
 
 ``mkdir PTU2BIN_build``
 
-Change to that directroy:
+The build directory should sit in parallel to the repository directory "PTU2BIN". Change to the build directory:
 
 ``cd PTU2BIN_build``
 
 Execute these commands (for "Release" type build):  
-``cmake -DCMAKE_BUILD_TYPE=Release ..``  
-``cmake --build .``
-
+``cmake -DCMAKE_BUILD_TYPE=Release ../PTU2BIN``  
+``cmake --build . --config Release``  
 
 ## INSTALLATION
 
@@ -72,8 +74,12 @@ Make sure that Python3.5 (or higher) is installed on your system.
 
 ### Windows
 The most convenient option is to place `convertPTUs.py` and `PTU2BIN.exe` in 
- a common directory. The files you want to convert should be in the same directory
- or in its sub-directories. (Altermatively, your might place these two files somwhere in your path.))
+a common directory. The files you want to convert should be in the same directory
+or in its sub-directories. (Alternatively, your might place these two files somwhere in your path.)
+
+(If you used `cmake` to build, you can install using `cmake --install .`
+The executable files will be installed under "%USERPROFILE%\bin". You might want to include
+that directory in your "Path".)
 
 ### Linux
 
