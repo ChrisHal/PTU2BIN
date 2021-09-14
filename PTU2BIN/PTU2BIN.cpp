@@ -24,7 +24,9 @@
 #include <cassert>
 #include <cstdio>
 //#include <numbers>
+#ifndef __STDC_WANT_LIB_EXT1__
 #define __STDC_WANT_LIB_EXT1__
+#endif
 #include <ctime>
 #include "external/cxxopts.hpp"
 #include "PTUFileHeader.h"
