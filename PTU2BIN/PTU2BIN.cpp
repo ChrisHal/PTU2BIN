@@ -31,17 +31,17 @@
 #include "TTTRRecordProcessor.h"
 #include "RecordBuffer.h"
 
-#ifdef __linux__
-#include <unistd.h>
-bool my_isatty()
-{
-	return isatty(STDOUT_FILENO);
-}
-#elif _WIN32
+#ifdef _WIN32
 #include <io.h>
 bool my_isatty()
 {
 	return _isatty(_fileno(stdout));
+}
+#else
+#include <unistd.h>
+bool my_isatty()
+{
+	return isatty(STDOUT_FILENO);
 }
 #endif
 
