@@ -155,7 +155,7 @@ bool PTUFileHeader::ProcessFile(std::istream& infile)
 				tm time;
 #ifdef _WIN32
 				gmtime_s(&time, &filedate);
-#elif __linux__
+#else
 				gmtime_r(&filedate, &time);
 #endif
 				char buf[26];
