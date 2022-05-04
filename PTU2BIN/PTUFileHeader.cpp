@@ -152,13 +152,13 @@ bool PTUFileHeader::ProcessFile(std::istream& infile)
 		case tyTDateTime:
 			if (strcmp(tghd.Ident, FileCreatingTime) == 0) {
 				filedate = OLEtime2time_t(Int64ToDouble(tghd.TagValue));
-				tm time;
+				tm time{};
 #ifdef _WIN32
 				gmtime_s(&time, &filedate);
 #else
 				gmtime_r(&filedate, &time);
 #endif
-				char buf[26];
+				char buf[26]{};
 				std::strftime(buf, sizeof(buf), "%c", &time);
 				std::cout << "File Creation Time: " << buf << std::endl;
 			}
