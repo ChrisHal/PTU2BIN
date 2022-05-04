@@ -40,18 +40,7 @@ A copy of this file has been placed in the "PTU2BIN/external/" directory.
 PTU2BIN was build using version 2.2.1 of cxxopts, newer versions might contain
 breaking changes.
 
-### Windows
-
-The recommended way is to use VisualStudio and build using
-the VisualStudio solution file `PTU2BIN.sln`. Currently, VisualStudio 2019 ist used to
-develope and test PTU2BIN.
-
-Alternatively, the you can use `cmake`. Just follow the instructions given for the **Linux** build.
-
-### Linux
-
 The build process uses `cmake`. You will need a C++ compiler installed.
-(This should also work on other platforms, including Windows.)
 To install from scratch, first clone the repository:
 
 `git clone https://github.com/ChrisHal/PTU2BIN.git`
@@ -60,7 +49,8 @@ Create the build directory:
 
 ``mkdir PTU2BIN_build``
 
-The build directory should sit in parallel to the repository directory "PTU2BIN". Change to the build directory:
+The build directory should sit in parallel to the repository directory "PTU2BIN".
+Change to the build directory:
 
 ``cd PTU2BIN_build``
 
@@ -72,19 +62,17 @@ Execute these commands (for "Release" type build):
 
 Make sure that Python3.7 (or higher) is installed on your system.
 
-### Windows
-The most convenient option is to place `convertPTUs.py` and `PTU2BIN.exe` in 
-a common directory. The files you want to convert should be in the same directory
-or in its sub-directories. (Alternatively, your might place these two files somwhere in your path.)
+The executables will be installed in the default path
+('/usr/local/bin' on Unix-like systems, e.g. Linux and Mac OS X,
+on Windows 'bin' in the users home directory). You should make sure
+that this directory is included in your `PATH`.
 
-(If you used `cmake` to build, you can install using `cmake --install .`
-The executable files will be installed under "%USERPROFILE%\bin". You might want to include
-that directory in your "Path".)
+Use this command (executed in the build directory):  
 
-### Linux
+windows:
+`cmake --install .`
 
-The executables will be installed in the default path (usually '/usr/local/bin')
-with this command (executed in the build directory):  
+Linux, Mac OS X etc.:
 `sudo cmake --install .`
 
 ## USAGE
@@ -96,12 +84,12 @@ To convert all files in current directory and subdirectories:
 **Windows**:
 Double-click `convertPTUs.py` -> all PTU files that are found in
 sub-directories, starting from the location of `convertPTUs.py` will be converted.
+
 Alternatively, if you installed in your `PATH`, you can use the method described in the next paragraph.
 
-**Linux**:
+**Linux and unixoids (and also Windows)**:
 In terminal, change to the directory where the PTU files to be converted reside.
 Start the conversion using the command `convertPTUs.py`.
-
 
 By default, the output of the conversion tool for each converted `<name>.ptu` file will be written to
 a `<name>.txt` file. Use option `-d` to direct this output to the terminal.
