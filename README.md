@@ -124,5 +124,5 @@ To learn about additional options:
 
 
 
-![MS build](https://github.com/ChrisHal/PTU2BIN/actions/workflows/msbuild.yml/badge.svg)
+![Wibndows build](https://github.com/ChrisHal/PTU2BIN/actions/workflows/cmake-windows.yml/badge.svg)
 ![Linux build](https://github.com/ChrisHal/PTU2BIN/actions/workflows/cmake.yml/badge.svg)
