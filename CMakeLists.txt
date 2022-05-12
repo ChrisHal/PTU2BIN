@@ -1,6 +1,12 @@
 cmake_minimum_required (VERSION 3.10)
 
 project ("PTU2BIN")
+include(InstallRequiredSystemLibraries)
+set(CPACK_RESOURCE_FILE_LICENSE  ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.txt)
+set(CPACK_PACKAGE_VERSION_MAJOR "2")
+set(CPACK_PACKAGE_VERSION_MINOR "0")
+include(CPack)
+
 option(DOPERFORMANCEANALYSIS "enable timing of execution time" OFF)
 if(DEFINED ENV{USERPROFILE})
 option(MS_PERUSERINSTALL "per-user installation" ON)
