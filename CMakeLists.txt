@@ -1,10 +1,16 @@
-cmake_minimum_required (VERSION 3.10)
+cmake_minimum_required (VERSION 3.12)
 
-project ("PTU2BIN")
+project ("PTU2BIN" LANGUAGES CXX)
+
 include(InstallRequiredSystemLibraries)
 set(CPACK_RESOURCE_FILE_LICENSE  ${CMAKE_CURRENT_SOURCE_DIR}/LICENSE.txt)
 set(CPACK_PACKAGE_VERSION_MAJOR "2")
 set(CPACK_PACKAGE_VERSION_MINOR "0")
+set(CPACK_PACKAGE_CONTACT "christian@halaszovich.de")
+set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "tool to convert PicoQuant ptu files to bin files")
+set(CPACK_PACKAGE_VENDOR "C. R. Halaszovich, MD")
+set(CPACK_DEBIAN_PACKAGE_SECTION "science/utils")
+set(CMAKE_PROJECT_HOMEPAGE_URL "https://github.com/ChrisHal/PTU2BIN")
 include(CPack)
 
 option(DOPERFORMANCEANALYSIS "enable timing of execution time" OFF)
