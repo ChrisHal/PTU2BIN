@@ -1,7 +1,7 @@
 
 # PTU2BIN
 
-Copyright (c) 2021 Christian R. Halaszovich
+Copyright (c) 2021 - 2023 Christian R. Halaszovich
 (See LICENSE.txt for licensing information.)
 
 ## Introduction
