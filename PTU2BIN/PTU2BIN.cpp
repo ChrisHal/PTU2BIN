@@ -1,7 +1,7 @@
 // Tool to convert 3T PTU file from PicoQuant SymphoTime
 // to PicoQuant BIN format (= pre-histogrammed data)
 //
-// (c) 2021 Christian R. Halaszovich
+// (c) 2021 - 2024 Christian R. Halaszovich
 // (See LICENSE.txt for licensing information.)
 // 
 // Some parts are based on demo code from PicoQuant
@@ -28,7 +28,7 @@
 #define __STDC_WANT_LIB_EXT1__
 #endif
 #include <ctime>
-#include "external/cxxopts.hpp"
+#include "cxxopts.hpp"
 #include "PTUFileHeader.h"
 #include "TTTRRecordProcessor.h"
 #include "RecordBuffer.h"
@@ -172,7 +172,7 @@ void AnalyzeTriggers(RecordBuffer& buffer, const TTTRRecordProcessor& processor,
 	buffer.rewind();
 }
 
-cxxopts::ParseResult parse(int argc, char** argv, std::string& infile, std::string& outfile, int& channelofinterest,
+void parse(int argc, char** argv, std::string& infile, std::string& outfile, int& channelofinterest,
 	int64_t& first_frame, int64_t& last_frame, bool& ignore_frame_trigger, int64_t& lines_to_skip)
 {
 	try {
@@ -228,13 +228,8 @@ cxxopts::ParseResult parse(int argc, char** argv, std::string& infile, std::stri
 					<< std::endl;
 			}
 		}
-
-		if (argc > 1) {
-			std::cerr << "Warning: more arguments given than expected. " << std::endl;
-		}
-		return result;
 	}
-	catch (const cxxopts::OptionException & e) {
+	catch (const cxxopts::exceptions::exception& e) {
 		std::cout << "error parsing options: " << e.what() << std::endl;
 		exit(-1);
 	}
@@ -246,7 +241,7 @@ int main(int argc, char** argv)
 	int channelofinterest = 1;
 	int64_t first_frame = 0, last_frame = std::numeric_limits<int64_t>::max(), lines_to_skip = 0;
 	bool ignore_frame_trigger{ false };
-	auto parsedargs = parse(argc, argv, infilename, outfilename, channelofinterest, first_frame, last_frame,
+	parse(argc, argv, infilename, outfilename, channelofinterest, first_frame, last_frame,
 		ignore_frame_trigger, lines_to_skip);
 	// check if we are running from a terminal
 #ifdef DOPERFORMANCEANALYSIS

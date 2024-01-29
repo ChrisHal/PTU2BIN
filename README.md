@@ -1,7 +1,7 @@
 
 # PTU2BIN
 
-Copyright (c) 2021 - 2023 Christian R. Halaszovich
+Copyright (c) 2021 - 2024 Christian R. Halaszovich
 (See LICENSE.txt for licensing information.)
 
 ## Introduction
@@ -36,9 +36,7 @@ most systems. Instructions for Windows and Linux are provided.
 
 **External dependencies:**
 `cxxopts.hpp` (available at https://github.com/jarro2783/cxxopts.git).
-A copy of this file has been placed in the "PTU2BIN/external/" directory.
-PTU2BIN was build using version 2.2.1 of cxxopts, newer versions might contain
-breaking changes.
+It is recommend to get this library via vcpkg (in particular on windows).
 
 The build process uses `cmake`. You will need a C++ compiler installed.
 To install from scratch, first clone the repository:
