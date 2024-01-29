@@ -24,10 +24,11 @@ jobs:
     runs-on: ${{ matrix.os }}
     
     steps:
-    - uses: actions/checkout@v2
-
-    - name: Bootstrap VCPKG
-      run: ./vcpkg/bootstrap-vcpkg
+    - uses: actions/checkout@v3
+    
+    - name: Restore vcpkg packages
+      working-directory: ${{env.GITHUB_WORKSPACE}}
+      run: vcpkg integrate install
       
     - name: Configure CMake
       # Configure CMake in a 'build' subdirectory. `CMAKE_BUILD_TYPE` is only required if you are using a single-configuration generator such as make.
