@@ -36,6 +36,15 @@
       "description": "Hiermit wird Windows (64 Bit) mit der Visual Studio-Entwicklungsumgebung als Ziel verwendet. (RelWithDebInfo)",
       "inherits": "x64-debug",
       "cacheVariables": { "CMAKE_BUILD_TYPE": "Release" }
-    }
+    },
+     {
+            "name": "vcpkg",
+            "generator": "Ninja",
+            "binaryDir": "${sourceDir}/build",
+            "cacheVariables": {
+                "CMAKE_TOOLCHAIN_FILE":
+                    "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake"
+            }
+     }   
   ]
 }
