@@ -352,3 +352,4 @@ healthchecksdb
 *.ptu
 /CMakeSettings.json
 CMakeUserPresets.json
+build/
